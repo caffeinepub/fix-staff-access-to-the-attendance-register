@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 3,
+  "summary": "New project",
+  "architectural_notes": [],
+  "known_issues": [
+    "Staff users cannot see/access the attendance register (Attendance tab not visible or not loading)."
+  ],
+  "isFixRequest": true,
+  "existing_features": [
+    {
+      "id": "feature-ensure-the-attendance-register-is-accessible-to-non-admin-staff-users-staff-must-be-able-to-open-the-attendance-tab-and-view-workers-and-attendance-records-without-authorization-traps-only-admin-only-actions-adding-workers-marking-attendance-should-remain-restricted",
+      "title": "Ensure the Attendance Register is accessible to non-admin staff users: staff must be able to open the “Attendance” tab and view workers and attendance records without authorization traps; only admin-only actions (adding workers, marking attendance) should remain restricted.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-frontend-resilience-in-the-attendance-tab-add-a-clear-user-facing-error-state-english-text-when-attendance-related-queries-fail-e-g-due-to-authorization-instead-of-silently-showing-empty-data-include-guidance-to-re-login-and-or-contact-an-admin-if-access-is-missing",
+      "title": "Frontend resilience: in the Attendance tab, add a clear user-facing error state (English text) when attendance-related queries fail (e.g., due to authorization), instead of silently showing empty data; include guidance to re-login and/or contact an admin if access is missing.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-2",
+      "summary": "Backend authorization fix: update backend authorization logic so that authenticated staff principals have the required “user” permissions to call user-level endpoints used by Attendance (at minimum: getWorkers, getAttendanceRecords, getWorkerAttendance, getCallerUserProfile, saveCallerUserProfile) while still preventing anonymous access and keeping admin-only endpoints restricted.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Fix staff access to the Attendance Register",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

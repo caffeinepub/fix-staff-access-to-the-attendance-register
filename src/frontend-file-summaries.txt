@@ -1,0 +1,17 @@
+{
+  "frontend/src/App.tsx": "Main application component that handles authentication state, profile setup, and renders the dashboard or login prompt based on user authentication status.",
+  "frontend/src/hooks/useQueries.ts": "Custom React Query hooks for all backend operations including user profiles, inventory, customers, income, expenses, sales, workers, attendance, and user roles with proper state management, error handling, and retry configuration.",
+  "frontend/src/components/Header.tsx": "Application header with branding, user profile display, and login/logout functionality.",
+  "frontend/src/components/Footer.tsx": "Application footer with copyright and attribution to caffeine.ai.",
+  "frontend/src/components/ProfileSetupModal.tsx": "Modal dialog for first-time user profile setup requiring name input.",
+  "frontend/src/components/LoginPrompt.tsx": "Landing page displayed to unauthenticated users showcasing app features with hero image and feature cards.",
+  "frontend/src/pages/Dashboard.tsx": "Main dashboard page with tabbed navigation for all bookkeeping features including the new Attendance tab.",
+  "frontend/src/components/tabs/SummaryTab.tsx": "Dashboard summary displaying financial metrics (income, expenses, net profit, inventory value) in Nigerian Naira (₦), recent transactions, and low stock alerts with proper currency formatting.",
+  "frontend/src/components/tabs/IncomeTab.tsx": "Income tracking interface with add/search/filter functionality and detailed transaction table displaying all amounts in Nigerian Naira (₦) with proper currency labels and formatting.",
+  "frontend/src/components/tabs/ExpenseTab.tsx": "Expense tracking interface with categorization, search/filter, and transaction management displaying all amounts in Nigerian Naira (₦) with proper currency labels and formatting.",
+  "frontend/src/components/tabs/InventoryTab.tsx": "Inventory management with add/edit capabilities, filtering by type, and value calculations displaying all monetary values in Nigerian Naira (₦) with proper currency labels.",
+  "frontend/src/components/tabs/CustomersTab.tsx": "Customer management interface with add functionality and purchase history viewing, displaying all monetary values in Nigerian Naira (₦) with proper currency labels.",
+  "frontend/src/components/tabs/SalesTab.tsx": "Sales recording interface that links customers and inventory items with automatic stock updates, displaying all prices and totals in Nigerian Naira (₦) with proper currency formatting.",
+  "frontend/src/index.css": "Global styles with OKLCH color system featuring green/nature-inspired palette for light and dark modes suitable for agricultural application.",
+  "frontend/src/components/tabs/AttendanceTab.tsx": "Worker attendance register interface with role-based admin controls for adding workers and marking attendance, comprehensive error handling with retry functionality, searchable and filterable attendance table displaying worker name, role, date, and status for all authenticated users."
+}

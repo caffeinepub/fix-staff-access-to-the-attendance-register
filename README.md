@@ -1,2 +1,3 @@
-# fix-staff-access-to-the-attendance-register
-Exported from Caffeine project: Fix staff access to the Attendance Register
+## 
+
+To run app build and run docker image: `docker build -t app . docker run -it --network host app`

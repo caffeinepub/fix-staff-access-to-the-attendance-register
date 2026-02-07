@@ -1,0 +1,83 @@
+{
+  "kind": "build_request",
+  "title": "Fix staff access to the Attendance Register",
+  "priority": "high",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Ensure the Attendance Register is accessible to non-admin staff users: staff must be able to open the “Attendance” tab and view workers and attendance records without authorization traps; only admin-only actions (adding workers, marking attendance) should remain restricted.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "I cannot see the attendance register for staff. Can you fix that"
+        ]
+      },
+      "acceptanceCriteria": [
+        "When logged in as a non-admin (staff) user, the Dashboard shows the “Attendance” tab and it renders without a blank screen or infinite loading.",
+        "As a non-admin (staff) user, the Attendance tab can successfully fetch and display workers and attendance records (or the empty-state message if none exist).",
+        "As a non-admin (staff) user, “Add Worker” and “Mark Attendance” controls remain hidden/disabled (admin-only), consistent with current UI intent.",
+        "As an admin user, existing Attendance functionality (add worker, mark attendance, view data) continues to work."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Backend authorization fix: update backend authorization logic so that authenticated staff principals have the required “user” permissions to call user-level endpoints used by Attendance (at minimum: getWorkers, getAttendanceRecords, getWorkerAttendance, getCallerUserProfile, saveCallerUserProfile) while still preventing anonymous access and keeping admin-only endpoints restricted.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "I cannot see the attendance register for staff. Can you fix that"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Calling getWorkers/getAttendanceRecords/getWorkerAttendance as a logged-in non-admin principal succeeds (no Unauthorized trap).",
+        "Anonymous caller access remains denied for user-level endpoints (Unauthorized).",
+        "Admin-only methods (e.g., addWorker, markAttendance) remain denied for non-admin users (Unauthorized)."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Frontend resilience: in the Attendance tab, add a clear user-facing error state (English text) when attendance-related queries fail (e.g., due to authorization), instead of silently showing empty data; include guidance to re-login and/or contact an admin if access is missing.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "I cannot see the attendance register for staff. Can you fix that"
+        ]
+      },
+      "acceptanceCriteria": [
+        "If attendance-related queries error, the Attendance tab shows an error message that indicates the register could not be loaded and provides next steps (re-login/contact admin).",
+        "If attendance-related queries succeed but there is no data, the existing empty-state messaging remains (not replaced by the error state)."
+      ]
+    }
+  ],
+  "constraints": [
+    "Backend must remain a single Motoko actor in backend/main.mo.",
+    "Do not edit files under frontend/immutablePaths (compose existing UI components instead)."
+  ],
+  "nonGoals": [
+    "Adding new attendance features (exports, summaries, payroll calculations).",
+    "Introducing third-party authentication providers (only Internet Identity)."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-ensure-the-attendance-register-is-accessible-to-non-admin-staff-users-staff-must-be-able-to-open-the-attendance-tab-and-view-workers-and-attendance-records-without-authorization-traps-only-admin-only-actions-adding-workers-marking-attendance-should-remain-restricted",
+      "featureTitle": "Ensure the Attendance Register is accessible to non-admin staff users: staff must be able to open the “Attendance” tab and view workers and attendance records without authorization traps; only admin-only actions (adding workers, marking attendance) should remain restricted.",
+      "files": [
+        "frontend/src/components/tabs/AttendanceTab.tsx",
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-frontend-resilience-in-the-attendance-tab-add-a-clear-user-facing-error-state-english-text-when-attendance-related-queries-fail-e-g-due-to-authorization-instead-of-silently-showing-empty-data-include-guidance-to-re-login-and-or-contact-an-admin-if-access-is-missing",
+      "featureTitle": "Frontend resilience: in the Attendance tab, add a clear user-facing error state (English text) when attendance-related queries fail (e.g., due to authorization), instead of silently showing empty data; include guidance to re-login and/or contact an admin if access is missing.",
+      "files": [
+        "frontend/src/components/tabs/AttendanceTab.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

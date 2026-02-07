@@ -1,0 +1,44 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Fix staff access and error handling for Attendance Register",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "summary": "Make Attendance tab viewable for non-admin staff by avoiding admin-only authorization checks for read-only data while keeping admin actions restricted.",
+      "acceptanceCriteria": [
+        "When logged in as a non-admin (staff) user, the Dashboard shows the “Attendance” tab and it renders without a blank screen or infinite loading.",
+        "As a non-admin (staff) user, the Attendance tab can successfully fetch and display workers and attendance records (or the empty-state message if none exist).",
+        "As a non-admin (staff) user, “Add Worker” and “Mark Attendance” controls remain hidden/disabled (admin-only), consistent with current UI intent.",
+        "As an admin user, existing Attendance functionality (add worker, mark attendance, view data) continues to work."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add a user-role query hook (e.g., using getCallerUserRole) and adjust Attendance-related queries (workers/attendance) to avoid long retry loops that can look like infinite loading. Use the authorization component's frontend guidance to treat authorization failures as recoverable UI states (not crashes). Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/components/tabs/AttendanceTab.tsx",
+          "operation": "modify",
+          "description": "Stop relying on an admin-only check for rendering the Attendance view; compute admin capabilities from the caller role (admin vs user) so staff can load read-only data while keeping Add Worker/Mark Attendance controls admin-only. Ensure loading state cannot get stuck due to role-check failures. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Show a clear error state in the Attendance tab when workers/attendance queries fail (e.g., authorization), with guidance to re-login or contact an admin.",
+      "acceptanceCriteria": [
+        "If attendance-related queries error, the Attendance tab shows an error message that indicates the register could not be loaded and provides next steps (re-login/contact admin).",
+        "If attendance-related queries succeed but there is no data, the existing empty-state messaging remains (not replaced by the error state)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/tabs/AttendanceTab.tsx",
+          "operation": "modify",
+          "description": "Add a user-facing error banner/section when attendance-related React Query hooks report an error (workers and/or attendance records). The message should be in English and include next steps (re-login and/or contact an admin). Keep the existing empty-state when queries succeed with zero results. Use the authorization component's frontend error-handling guidance for trap/unauthorized failures. Verify the component's usage instructions before implementing."
+        }
+      ]
+    }
+  ]
+}
