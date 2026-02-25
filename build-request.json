@@ -1,0 +1,115 @@
+{
+  "kind": "build_request",
+  "title": "Add new user verification process with existing users as admins",
+  "projectName": "Pepper Farm Bookkeeping",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Add a pending verification state to the user profile model in the backend. When a new user completes profile setup, their account status must be set to 'pending' until approved by an existing verified user.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Create a verification process for new users with the old users acting as admin"
+        ]
+      },
+      "acceptanceCriteria": [
+        "New user profiles are created with a 'pending' status by default",
+        "Existing users who were registered before this feature are automatically assigned 'verified' status",
+        "Backend stores and exposes user status (pending, verified, rejected) on the profile record"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Add backend functions for admin (verified) users to list all pending users, approve a pending user (set status to 'verified'), and reject a pending user (set status to 'rejected'). Only verified users may call these functions.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Create a verification process for new users with the old users acting as admin"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A `getPendingUsers()` function returns all users with 'pending' status, callable only by verified users",
+        "An `approveUser(userId)` function sets a user's status to 'verified', callable only by verified users",
+        "A `rejectUser(userId)` function sets a user's status to 'rejected', callable only by verified users",
+        "Calls from non-verified users to admin functions return an authorization error"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Block access to the dashboard for users whose account status is 'pending' or 'rejected'. Show a dedicated waiting screen for pending users explaining that their account is awaiting admin approval, and a rejection notice for rejected users.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Create a verification process for new users with the old users acting as admin"
+        ]
+      },
+      "acceptanceCriteria": [
+        "After profile setup, a pending user sees a 'Waiting for Approval' screen instead of the dashboard",
+        "The waiting screen displays a clear message that an existing farm member must approve their account",
+        "A rejected user sees a rejection notice explaining they were not approved",
+        "Verified users continue to see the full dashboard as before"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Add a 'User Verification' admin panel accessible only to verified users in the dashboard. This panel lists all pending users with their name and registration date, and provides Approve and Reject action buttons for each.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Create a verification process for new users with the old users acting as admin"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A new 'Verification' tab or section appears in the dashboard only for verified users",
+        "The panel lists all pending users showing their display name and registration timestamp",
+        "Each pending user entry has an 'Approve' and a 'Reject' button",
+        "Approving or rejecting a user updates their status immediately and refreshes the list",
+        "The panel shows an empty state message when there are no pending users"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Write a migration to mark all existing registered users as 'verified' so they retain full access after the verification feature is deployed.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "with the old users acting as admin"
+        ]
+      },
+      "acceptanceCriteria": [
+        "All user profiles that existed before this upgrade have their status set to 'verified' after migration",
+        "No existing user loses access to the dashboard after deployment"
+      ]
+    }
+  ],
+  "constraints": [
+    "All Motoko logic must remain in the single main actor (backend/main.mo)",
+    "Do not modify any files under frontend/src/hooks/ or frontend/src/components/ui",
+    "Existing verified users must not lose any access or functionality"
+  ],
+  "nonGoals": [
+    "Email or push notification to admins when a new user registers",
+    "Role hierarchy beyond verified/pending/rejected (no separate super-admin role)",
+    "Time-limited verification tokens or invite links"
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}

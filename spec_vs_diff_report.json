@@ -1,0 +1,77 @@
+{
+  "kind": "spec_vs_diff_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-25T23:43:16.375Z",
+  "summary": "The diff implements most of the requested verification requirements. Backend adds approval state, request/approve/reject/list functions, and admin checks. Frontend adds WaitingForApprovalScreen, RejectedScreen, VerificationTab, and dashboard access control. However, several specific acceptance criteria have gaps: the RejectedScreen is never shown (App.tsx conflates pending and rejected into the same WaitingForApprovalScreen), the VerificationTab shows all users not just pending ones, the panel shows principal IDs rather than display names, there is no registration timestamp shown, and the backend migration for existing users (REQ-5) is not evidenced.",
+  "missing_requirements": [
+    {
+      "id": "REQ-3",
+      "requirement": "A rejected user sees a rejection notice explaining they were not approved (separate from the waiting screen).",
+      "reason": "App.tsx shows only WaitingForApprovalScreen when isApproved===false, with a comment acknowledging that both pending and rejected map to the same false value. RejectedScreen.tsx is imported but never rendered in App.tsx — there is no condition that renders RejectedScreen.",
+      "evidence": [
+        "frontend/src/App.tsx",
+        "frontend/src/components/RejectedScreen.tsx"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "The panel lists all pending users showing their display name and registration timestamp.",
+      "reason": "VerificationTab.tsx uses UserApprovalInfo which contains a principal field; the table displays a truncated principal ID, not a display name. There is no evidence that registration timestamp is stored or displayed in the panel.",
+      "evidence": [
+        "frontend/src/components/tabs/VerificationTab.tsx"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "The panel lists only pending users, not all users.",
+      "reason": "VerificationTab calls listApprovals() which returns all approvals (approved, rejected, pending), and the UI shows StatusBadge for all statuses. There is no filter to show only pending users.",
+      "evidence": [
+        "frontend/src/components/tabs/VerificationTab.tsx",
+        "backend/main.mo"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "requirement": "Write a migration to mark all existing registered users as verified so they retain full access after the verification feature is deployed.",
+      "reason": "No migration code is visible in backend/main.mo or any other file. The bootstrapAdminRegistration mechanism only covers up to 4 auto-registered admins, not a migration of all previously registered users. There is no system_upgrade hook or pre-upgrade migration logic shown in the diff.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    }
+  ],
+  "hallucinated_features": [
+    {
+      "description": "A Request Approval button on the WaitingForApprovalScreen that lets users actively submit an approval request via requestApproval() mutation.",
+      "reason": "The build request does not mention any user-initiated approval request flow. The spec only requires showing a waiting screen with a message about admin approval.",
+      "evidence": [
+        "frontend/src/components/WaitingForApprovalScreen.tsx"
+      ]
+    },
+    {
+      "description": "Auto-admin bootstrap registration with a hard limit of 4 admins via bootstrapAdminRegistration, autoRegisteredAdminCount, and adminLimit.",
+      "reason": "The build request does not mention an auto-registration bootstrap mechanism or a limit on the number of admins. The spec says existing verified users are admins, not that the first N users to call a bootstrap endpoint become admins.",
+      "evidence": [
+        "backend/main.mo"
+      ]
+    },
+    {
+      "description": "VerificationTab displays all users across all approval statuses (approved, pending, rejected) with status badges, not just pending users.",
+      "reason": "REQ-4 specifies the panel lists pending users only. Showing all users with their statuses is beyond the spec.",
+      "evidence": [
+        "frontend/src/components/tabs/VerificationTab.tsx"
+      ]
+    }
+  ],
+  "confidence": 0.72,
+  "changed_files": [
+    "backend/main.mo",
+    "frontend-file-summaries.txt",
+    "frontend/src/App.tsx",
+    "frontend/src/components/RejectedScreen.tsx",
+    "frontend/src/components/WaitingForApprovalScreen.tsx",
+    "frontend/src/components/tabs/VerificationTab.tsx",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/Dashboard.tsx",
+    "project_state.json"
+  ]
+}

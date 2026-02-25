@@ -1,0 +1,49 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-block-access-to-the-dashboard-for-users-whose-account-status-is-pending-or-rejected-show-a-dedicated-waiting-screen-for-pending-users-explaining-that-their-account-is-awaiting-admin-approval-and-a-rejection-notice-for-rejected-users",
+      "featureTitle": "Block access to the dashboard for users whose account status is 'pending' or 'rejected'. Show a dedicated waiting screen for pending users explaining that their account is awaiting admin approval, and a rejection notice for rejected users.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/components/RejectedScreen.tsx",
+        "frontend/src/components/WaitingForApprovalScreen.tsx",
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "user-approval@3.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-user-verification-admin-panel-accessible-only-to-verified-users-in-the-dashboard-this-panel-lists-all-pending-users-with-their-name-and-registration-date-and-provides-approve-and-reject-action-buttons-for-each",
+      "featureTitle": "Add a 'User Verification' admin panel accessible only to verified users in the dashboard. This panel lists all pending users with their name and registration date, and provides Approve and Reject action buttons for each.",
+      "files": [
+        "frontend/src/components/tabs/VerificationTab.tsx",
+        "frontend/src/pages/Dashboard.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "user-approval@3.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

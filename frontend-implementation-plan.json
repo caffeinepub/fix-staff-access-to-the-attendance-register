@@ -1,0 +1,62 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Add new user verification process with existing users as admins",
+  "requirements": [
+    {
+      "id": "REQ-3",
+      "summary": "Block access to dashboard for pending/rejected users and show appropriate waiting/rejection screens",
+      "acceptanceCriteria": [
+        "After profile setup, a pending user sees a 'Waiting for Approval' screen instead of the dashboard",
+        "The waiting screen displays a clear message that an existing farm member must approve their account",
+        "A rejected user sees a rejection notice explaining they were not approved",
+        "Verified users continue to see the full dashboard as before"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/WaitingForApprovalScreen.tsx",
+          "operation": "create",
+          "description": "Create a component that displays a waiting message for users with 'pending' approval status. Use the user-approval component to check approval status via isCallerApproved backend function. Display a clear message explaining that an existing farm member must approve their account before they can access the dashboard. Include a 'Request Approval' button that calls the requestApproval backend function if the user hasn't already requested approval. Verify the component's usage instructions from the user-approval component before implementing."
+        },
+        {
+          "path": "frontend/src/components/RejectedScreen.tsx",
+          "operation": "create",
+          "description": "Create a component that displays a rejection notice for users with 'rejected' approval status. Show a clear message explaining that their account was not approved. Use the user-approval component to determine rejection status via isCallerApproved backend function. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Add approval status checking after profile setup is complete. Use the user-approval component's isCallerApproved function to determine if the user is approved, pending, or rejected. If the user has a profile but is not approved, render WaitingForApprovalScreen. If rejected, render RejectedScreen. Only render the Dashboard for approved users or admins. Ensure the check happens after authentication and profile setup but before dashboard access. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add React Query hooks for user approval operations: useIsCallerApproved (query hook for checking approval status), useRequestApproval (mutation hook for requesting approval), useListApprovals (admin-only query hook for fetching all pending users), and approval action mutations (useApproveUser, useRejectUser) that call setApproval backend function with appropriate status. Follow the existing hook patterns in this file. Verify the user-approval component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Add User Verification admin panel for verified users to approve/reject pending users",
+      "acceptanceCriteria": [
+        "A new 'Verification' tab or section appears in the dashboard only for verified users",
+        "The panel lists all pending users showing their display name and registration timestamp",
+        "Each pending user entry has an 'Approve' and a 'Reject' button",
+        "Approving or rejecting a user updates their status immediately and refreshes the list",
+        "The panel shows an empty state message when there are no pending users"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/tabs/VerificationTab.tsx",
+          "operation": "create",
+          "description": "Create an admin-only tab component for user verification management. Use the user-approval component's listApprovals backend function to fetch all users with their approval status. Display pending users in a table showing their principal (since UserApprovalInfo doesn't include name), approval status, and action buttons. Provide 'Approve' and 'Reject' buttons for each pending user that call setApproval with the appropriate ApprovalStatus. Show an empty state message when there are no pending users. Include proper error handling and loading states. Use the authorization component's isCallerAdmin or getCallerUserRole to verify admin access. Verify both component usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/pages/Dashboard.tsx",
+          "operation": "modify",
+          "description": "Add a new 'Verification' tab to the dashboard navigation that renders VerificationTab component. Use the authorization component to conditionally show this tab only to admin users by checking isCallerAdmin or getCallerUserRole. Position the tab appropriately in the existing tab list alongside Summary, Income, Expenses, etc. Ensure the tab is properly wired into the existing tabs state management. Verify the authorization component's usage instructions before implementing."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 3,
+  "summary": "App with a user verification process where existing users act as admins to verify new users.",
+  "architectural_notes": [
+    "Existing users have admin privileges to verify/approve new user registrations"
+  ],
+  "known_issues": [],
+  "isFixRequest": false,
+  "existing_features": [
+    {
+      "id": "feature-block-access-to-the-dashboard-for-users-whose-account-status-is-pending-or-rejected-show-a-dedicated-waiting-screen-for-pending-users-explaining-that-their-account-is-awaiting-admin-approval-and-a-rejection-notice-for-rejected-users",
+      "title": "Block access to the dashboard for users whose account status is 'pending' or 'rejected'. Show a dedicated waiting screen for pending users explaining that their account is awaiting admin approval, and a rejection notice for rejected users.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-user-verification-admin-panel-accessible-only-to-verified-users-in-the-dashboard-this-panel-lists-all-pending-users-with-their-name-and-registration-date-and-provides-approve-and-reject-action-buttons-for-each",
+      "title": "Add a 'User Verification' admin panel accessible only to verified users in the dashboard. This panel lists all pending users with their name and registration date, and provides Approve and Reject action buttons for each.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Verification process for new users, with existing/old users acting as admins to approve or verify new user registrations",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Add a pending verification state to the user profile model in the backend. When a new user completes profile setup, their account status must be set to 'pending' until approved by an existing verified user.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Add backend functions for admin (verified) users to list all pending users, approve a pending user (set status to 'verified'), and reject a pending user (set status to 'rejected'). Only verified users may call these functions.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Write a migration to mark all existing registered users as 'verified' so they retain full access after the verification feature is deployed.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "Pepper Farm Bookkeeping",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}
