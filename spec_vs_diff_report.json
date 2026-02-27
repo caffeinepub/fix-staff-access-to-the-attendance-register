@@ -1,48 +1,46 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T23:55:38.211Z",
-  "summary": "The diff implements most of the required features: migration.mo is added with enteredBy migration for all record types, backend/main.mo includes listPendingUsers, approve/reject via setApproval, and migration logic, frontend tabs (Income, Expense, Inventory, Sales, Attendance, Customers) now include 'Entered By' columns, and VerificationTab is updated with approve/reject functionality. However, some acceptance criteria cannot be fully verified due to truncation, and there are a few concerns noted below.",
+  "generatedAt": "2026-02-27T00:06:41.902Z",
+  "summary": "The diff shows only two files modified: backend/main.mo (backend authorization/approval logic) and project_state.json (project metadata). None of the frontend tab components (VerificationTab, InventoryTab, IncomeTab, ExpenseTab, SalesTab, CustomersTab, AttendanceTab, FarmTimeTab, SummaryTab, Dashboard) were modified. All three requirements — fixing button visibility (REQ-1), fixing button onClick handlers (REQ-2), and wiring the 'Entered By' column to the backend enteredBy field (REQ-3) — remain unimplemented. The project_state.json shows all three action items as 'pending', confirming no implementation was done.",
   "missing_requirements": [
     {
       "id": "REQ-1",
-      "requirement": "Existing users without an approval status are migrated to an appropriate default status on upgrade; Migration logic is placed in migration.mo",
-      "reason": "The migration.mo file handles enteredBy field migration for records but does not appear to contain user approval status migration logic. The file only defines OldActor types for inventory/customers/income/expenses/sales/workers and migrates enteredBy fields, with no user approval state migration for existing users without a verified status.",
+      "requirement": "Audit all recently added buttons across every tab and ensure every button is rendered with visible styling — correct background color, text color, and sufficient contrast.",
+      "reason": "No frontend tab component files were modified in the diff. The project_state.json marks AR-1 (REQ-1) as 'pending', indicating no button styling fixes were applied.",
       "evidence": [
-        "backend/migration.mo"
+        "project_state.json"
       ]
     },
     {
       "id": "REQ-2",
-      "requirement": "Each row shows the user's name, identifier, and status",
-      "reason": "The VerificationTab table headers shown in the diff only include 'Principal', 'Status', and 'Actions' columns. There is no 'Name' column visible in the table headers, so the user's name may not be displayed per the AC requirement.",
+      "requirement": "Audit all recently added buttons and ensure every button has a working onClick handler wired to the correct mutation or action.",
+      "reason": "No frontend tab component files were modified in the diff. The project_state.json marks AR-2 (REQ-2) as 'pending', indicating no onClick handler fixes were applied.",
       "evidence": [
-        "frontend/src/components/tabs/VerificationTab.tsx"
+        "project_state.json"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Verify that the 'Entered By' column and its associated UI controls are fully wired to the backend enteredBy field in all relevant tabs (InventoryTab, IncomeTab, ExpenseTab, SalesTab).",
+      "reason": "No frontend tab component files were modified in the diff. The project_state.json marks AR-3 (REQ-3) as 'pending', indicating no 'Entered By' wiring was implemented.",
+      "evidence": [
+        "project_state.json"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "listPendingUsers query returning UserProfile objects as a separate endpoint",
-      "reason": "The backend exposes a listPendingUsers function returning [UserProfile], but this was not explicitly requested. The requested function was to list pending approvals (returning approval info with principal/status), which appears to already be covered by the existing listApprovals endpoint. Adding a separate listPendingUsers returning UserProfile objects was not specified in the build request.",
+      "description": "Backend authorization and user approval logic changes in main.mo including bootstrapAdminRegistration, isAutoRegisteredAdmin, auto-registered admin limits, and approval workflow methods.",
+      "reason": "The build request explicitly states constraints to not change backend data models or stable variable structures, and the requirements are exclusively about fixing frontend button visibility and onClick handlers. The backend/main.mo changes were not requested by any requirement.",
       "evidence": [
         "backend/main.mo"
       ]
     }
   ],
-  "confidence": 0.65,
+  "confidence": 0.92,
   "changed_files": [
     "backend/main.mo",
-    "backend/migration.mo",
-    "frontend-file-summaries.txt",
-    "frontend/src/components/tabs/AttendanceTab.tsx",
-    "frontend/src/components/tabs/CustomersTab.tsx",
-    "frontend/src/components/tabs/ExpenseTab.tsx",
-    "frontend/src/components/tabs/FarmTimeTab.tsx",
-    "frontend/src/components/tabs/IncomeTab.tsx",
-    "frontend/src/components/tabs/InventoryTab.tsx",
-    "frontend/src/components/tabs/SalesTab.tsx",
-    "frontend/src/components/tabs/VerificationTab.tsx",
     "project_state.json"
   ]
 }

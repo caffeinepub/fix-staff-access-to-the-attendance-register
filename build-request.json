@@ -1,92 +1,74 @@
 {
   "kind": "build_request",
-  "title": "Complete admin approval logic and add 'Entered By' column to all entry tables",
-  "priority": "normal",
+  "title": "Fix non-functional and invisible new buttons",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Complete the admin approval workflow in the backend: add a function to list all pending users awaiting approval, ensure approve and reject functions work correctly, and migrate any existing users without a verified status to a default 'pending' or 'verified' state as appropriate.",
-      "target": "backend",
+      "text": "Audit all recently added buttons across every tab (VerificationTab, InventoryTab, IncomeTab, ExpenseTab, SalesTab, CustomersTab, AttendanceTab, FarmTimeTab, SummaryTab, and Dashboard) and ensure every button is rendered with visible styling — correct background color, text color, and sufficient contrast — so no button appears invisible or blends into its background.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-3"
+          "msg-latest"
         ],
         "quotes": [
-          "admin approval logic (listing pending users, approving/rejecting, and migrating existing users to verified) may need a bit more work"
+          "Some new buttons are not functional and are not visible"
         ]
       },
       "acceptanceCriteria": [
-        "Backend exposes a query to return all users with a pending approval status",
-        "Approve and reject functions update the user's approval status correctly and persist the change",
-        "Existing users without an approval status are migrated to an appropriate default status on upgrade",
-        "Migration logic is placed in migration.mo"
+        "All buttons added in the latest version are visually visible with legible text and distinct styling.",
+        "No button has transparent, white-on-white, or otherwise invisible styling in either light or dark mode.",
+        "Buttons use consistent Tailwind utility classes aligned with the existing design system color tokens."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Update the VerificationTab component to correctly fetch and display the list of pending users using the completed backend query from REQ-1, showing each user's name, principal/ID, and current status with Approve/Reject action buttons.",
+      "text": "Audit all recently added buttons across every tab and ensure every button has a working onClick handler wired to the correct mutation or action — including approve/reject in VerificationTab, add/edit/delete in InventoryTab, IncomeTab, ExpenseTab, SalesTab, CustomersTab, and AttendanceTab — so that clicking each button triggers the intended operation without errors.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-3"
+          "msg-latest"
         ],
         "quotes": [
-          "listing pending users, approving/rejecting"
+          "Some new buttons are not functional and are not visible"
         ]
       },
       "acceptanceCriteria": [
-        "VerificationTab fetches and displays all users with pending approval status",
-        "Each row shows the user's name, identifier, and status",
-        "Approve and Reject buttons trigger the correct backend calls and refresh the list on success"
+        "Clicking each button triggers its intended action (e.g., opens a dialog, submits a form, calls a backend mutation).",
+        "No button is missing an onClick handler or has a handler that silently does nothing.",
+        "Approve and reject buttons in VerificationTab correctly call the approval workflow backend methods.",
+        "Add/edit/delete buttons in data tabs correctly open dialogs or trigger the relevant React Query mutations.",
+        "No console errors are thrown when interacting with any button."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Track the authenticated caller's principal (or display name) when a new entry is created for Income, Expenses, Inventory, Sales, Attendance, and Customers records. Store this 'enteredBy' field in each record's data type in the backend.",
-      "target": "backend",
+      "text": "Verify that the 'Entered By' column and its associated UI controls introduced in the recent version are fully wired to the backend enteredBy field in all relevant tabs (InventoryTab, IncomeTab, ExpenseTab, SalesTab), ensuring data is both saved and displayed correctly.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-5"
+          "msg-latest"
         ],
         "quotes": [
-          "create a column to show the user that enter an entry"
+          "Some new buttons are not functional and are not visible"
         ]
       },
       "acceptanceCriteria": [
-        "Each entry type (income, expense, inventory item, sale, attendance, customer) includes an 'enteredBy' field storing the caller's principal or resolved display name",
-        "The 'enteredBy' field is automatically set to the calling user's identity when a new record is created",
-        "Existing records without this field are handled gracefully (e.g., display 'Unknown')"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Add an 'Entered By' column to the data tables in IncomeTab, ExpenseTab, InventoryTab, SalesTab, AttendanceTab, and CustomersTab. Display the name or identifier of the user who created each record.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ],
-        "quotes": [
-          "create a column to show the user that enter an entry"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Each of the listed tabs has an 'Entered By' column in its table",
-        "The column displays the name or principal of the user who created the record",
-        "Records without an 'enteredBy' value display 'Unknown' or a suitable fallback",
-        "The column is responsive and does not break the existing table layout"
+        "The 'Entered By' column is visible in all data tables where it was introduced.",
+        "When a record is added, the enteredBy field is populated with the current user's name.",
+        "Existing records migrated by migration.mo display 'unknown' in the Entered By column."
       ]
     }
   ],
   "constraints": [
-    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui",
-    "All Motoko logic must remain in the single main actor (backend/main.mo)",
-    "Migration logic for state changes must be placed in backend/migration.mo"
+    "Do not change backend data models or stable variable structures.",
+    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui.",
+    "Preserve all existing working functionality — only fix broken or invisible buttons."
   ],
   "nonGoals": [
-    "Redesigning the visual theme or layout of any tab",
-    "Adding role-based permissions beyond the existing admin/user distinction",
-    "Audit logging or change history beyond the initial 'entered by' field"
+    "Adding new features beyond fixing existing broken/invisible buttons.",
+    "Redesigning the overall UI layout or color theme.",
+    "Changing authentication or authorization logic."
   ],
   "imageRequirements": {
     "required": [],

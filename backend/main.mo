@@ -9,10 +9,10 @@ import Iter "mo:core/Iter";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 import UserApproval "user-approval/approval";
-import Migration "migration";
+
 import Text "mo:core/Text";
 
-(with migration = Migration.run)
+
 actor {
   // Initialize the user system state
   let accessControlState = AccessControl.initState();
@@ -596,3 +596,4 @@ actor {
     };
   };
 };
+

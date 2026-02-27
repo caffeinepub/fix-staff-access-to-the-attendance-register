@@ -1,85 +1,72 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T23:55:38.215Z",
+  "generatedAt": "2026-02-27T00:06:41.906Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 2,
+    "total": 3,
+    "implemented": 0,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Complete the admin approval workflow in the backend: add a function to list all pending users awaiting approval, ensure approve and reject functions work correctly, and migrate any existing users without a verified status to a default 'pending' or 'verified' state as appropriate.",
-        "status": "unknown",
-        "plannedFiles": [],
+        "summary": "Audit all recently added buttons across every tab (VerificationTab, InventoryTab, IncomeTab, ExpenseTab, SalesTab, CustomersTab, AttendanceTab, FarmTimeTab, SummaryTab, and Dashboard) and ensure every button is rendered with visible styling — correct background color, text color, and sufficient contrast — so no button appears invisible or blends into its background.",
+        "status": "missing",
+        "plannedFiles": [
+          "frontend/src/components/tabs/VerificationTab.tsx",
+          "frontend/src/components/tabs/InventoryTab.tsx",
+          "frontend/src/components/tabs/IncomeTab.tsx",
+          "frontend/src/components/tabs/ExpenseTab.tsx",
+          "frontend/src/components/tabs/SalesTab.tsx",
+          "frontend/src/components/tabs/CustomersTab.tsx",
+          "frontend/src/components/tabs/AttendanceTab.tsx",
+          "frontend/src/components/tabs/FarmTimeTab.tsx",
+          "frontend/src/components/tabs/SummaryTab.tsx",
+          "frontend/src/pages/Dashboard.tsx"
+        ],
         "matchedFiles": []
       },
       {
         "id": "REQ-2",
-        "summary": "Update the VerificationTab component to correctly fetch and display the list of pending users using the completed backend query from REQ-1, showing each user's name, principal/ID, and current status with Approve/Reject action buttons.",
-        "status": "implemented",
+        "summary": "Audit all recently added buttons across every tab and ensure every button has a working onClick handler wired to the correct mutation or action — including approve/reject in VerificationTab, add/edit/delete in InventoryTab, IncomeTab, ExpenseTab, SalesTab, CustomersTab, and AttendanceTab — so that clicking each button triggers the intended operation without errors.",
+        "status": "missing",
         "plannedFiles": [
           "frontend/src/components/tabs/VerificationTab.tsx",
+          "frontend/src/components/tabs/InventoryTab.tsx",
+          "frontend/src/components/tabs/IncomeTab.tsx",
+          "frontend/src/components/tabs/ExpenseTab.tsx",
+          "frontend/src/components/tabs/SalesTab.tsx",
+          "frontend/src/components/tabs/CustomersTab.tsx",
+          "frontend/src/components/tabs/AttendanceTab.tsx",
+          "frontend/src/components/tabs/FarmTimeTab.tsx",
           "frontend/src/hooks/useQueries.ts"
         ],
-        "matchedFiles": [
-          "frontend/src/components/tabs/VerificationTab.tsx"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Track the authenticated caller's principal (or display name) when a new entry is created for Income, Expenses, Inventory, Sales, Attendance, and Customers records. Store this 'enteredBy' field in each record's data type in the backend.",
-        "status": "unknown",
-        "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-4",
-        "summary": "Add an 'Entered By' column to the data tables in IncomeTab, ExpenseTab, InventoryTab, SalesTab, AttendanceTab, and CustomersTab. Display the name or identifier of the user who created each record.",
-        "status": "implemented",
+        "id": "REQ-3",
+        "summary": "Verify that the 'Entered By' column and its associated UI controls introduced in the recent version are fully wired to the backend enteredBy field in all relevant tabs (InventoryTab, IncomeTab, ExpenseTab, SalesTab), ensuring data is both saved and displayed correctly.",
+        "status": "missing",
         "plannedFiles": [
+          "frontend/src/components/tabs/InventoryTab.tsx",
           "frontend/src/components/tabs/IncomeTab.tsx",
           "frontend/src/components/tabs/ExpenseTab.tsx",
-          "frontend/src/components/tabs/InventoryTab.tsx",
           "frontend/src/components/tabs/SalesTab.tsx",
-          "frontend/src/components/tabs/AttendanceTab.tsx",
           "frontend/src/components/tabs/CustomersTab.tsx",
+          "frontend/src/components/tabs/AttendanceTab.tsx",
           "frontend/src/components/tabs/FarmTimeTab.tsx"
         ],
-        "matchedFiles": [
-          "frontend/src/components/tabs/IncomeTab.tsx",
-          "frontend/src/components/tabs/ExpenseTab.tsx",
-          "frontend/src/components/tabs/InventoryTab.tsx",
-          "frontend/src/components/tabs/SalesTab.tsx",
-          "frontend/src/components/tabs/AttendanceTab.tsx",
-          "frontend/src/components/tabs/CustomersTab.tsx",
-          "frontend/src/components/tabs/FarmTimeTab.tsx"
-        ]
+        "matchedFiles": []
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
-    "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/components/tabs/AttendanceTab.tsx",
-    "frontend/src/components/tabs/CustomersTab.tsx",
-    "frontend/src/components/tabs/ExpenseTab.tsx",
-    "frontend/src/components/tabs/FarmTimeTab.tsx",
-    "frontend/src/components/tabs/IncomeTab.tsx",
-    "frontend/src/components/tabs/InventoryTab.tsx",
-    "frontend/src/components/tabs/SalesTab.tsx",
-    "frontend/src/components/tabs/VerificationTab.tsx",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

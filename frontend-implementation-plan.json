@@ -1,73 +1,170 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Complete admin approval logic and add 'Entered By' column to all entry tables",
+  "title": "Fix non-functional and invisible new buttons",
   "requirements": [
     {
-      "id": "REQ-2",
-      "summary": "Update VerificationTab to fetch and display pending users with approval actions",
+      "id": "REQ-1",
+      "summary": "Audit and fix button visibility across all tabs ensuring every button has proper styling with visible background color, text color, and sufficient contrast",
       "acceptanceCriteria": [
-        "VerificationTab fetches and displays all users with pending approval status",
-        "Each row shows the user's name, identifier, and status",
-        "Approve and Reject buttons trigger the correct backend calls and refresh the list on success"
+        "All buttons added in the latest version are visually visible with legible text and distinct styling.",
+        "No button has transparent, white-on-white, or otherwise invisible styling in either light or dark mode.",
+        "Buttons use consistent Tailwind utility classes aligned with the existing design system color tokens."
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/tabs/VerificationTab.tsx",
           "operation": "modify",
-          "description": "Update the component to call the backend's listApprovals query (which returns UserApprovalInfo[] with principal and status fields). Filter the results to show only users with status 'pending'. For each pending user, fetch their profile using getUserProfile to display their name alongside their principal. Update the table columns to show Name, Principal, and Status. Ensure the Approve/Reject buttons call setApproval with the appropriate ApprovalStatus enum value and refresh the query on success. Handle cases where a user profile may not exist by displaying 'Unknown' as a fallback."
-        },
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Add a new mutation hook useSetApproval that wraps the backend's setApproval(user: Principal, status: ApprovalStatus) method. Configure it to invalidate the 'approvals' query key on success to automatically refresh the verification list. Ensure proper error handling and loading states are exposed."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Add 'Entered By' column to all entry tables displaying the user who created each record",
-      "acceptanceCriteria": [
-        "Each of the listed tabs has an 'Entered By' column in its table",
-        "The column displays the name or principal of the user who created the record",
-        "Records without an 'enteredBy' value display 'Unknown' or a suitable fallback",
-        "The column is responsive and does not break the existing table layout"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/tabs/IncomeTab.tsx",
-          "operation": "modify",
-          "description": "Add an 'Entered By' column to the income records table. The backend now includes an 'enteredBy' field (string) in each IncomeRecord. Display this field in a new table column. If the field is empty or undefined, display 'Unknown'. Ensure the column is responsive and fits within the existing table layout without breaking on smaller screens."
-        },
-        {
-          "path": "frontend/src/components/tabs/ExpenseTab.tsx",
-          "operation": "modify",
-          "description": "Add an 'Entered By' column to the expense records table. The backend now includes an 'enteredBy' field (string) in each ExpenseRecord. Display this field in a new table column. If the field is empty or undefined, display 'Unknown'. Ensure the column is responsive and fits within the existing table layout without breaking on smaller screens."
+          "description": "Audit and fix all button styling in VerificationTab. Ensure Approve and Reject buttons in both pending and processed tables have visible background colors (e.g., bg-green-600 for approve, bg-red-600 for reject), proper text color (text-white), hover states, and adequate padding. Replace any transparent or invisible button classes with consistent Tailwind utilities matching the app's design system."
         },
         {
           "path": "frontend/src/components/tabs/InventoryTab.tsx",
           "operation": "modify",
-          "description": "Add an 'Entered By' column to the inventory items table. The backend now includes an 'enteredBy' field (string) in each InventoryItem. Display this field in a new table column. If the field is empty or undefined, display 'Unknown'. Ensure the column is responsive and fits within the existing table layout without breaking on smaller screens."
+          "description": "Audit and fix button visibility in InventoryTab. Ensure the Add Inventory button and any edit/delete action buttons in the table have proper background colors (e.g., bg-blue-600 for primary actions), visible text (text-white), hover states, and consistent styling. Verify icon buttons use visible colors and hover states."
+        },
+        {
+          "path": "frontend/src/components/tabs/IncomeTab.tsx",
+          "operation": "modify",
+          "description": "Audit and fix button visibility in IncomeTab. Ensure the Add Income button and any action buttons have proper styling with visible backgrounds (bg-blue-600 or similar), white text, hover effects, and sufficient contrast in both light and dark modes."
+        },
+        {
+          "path": "frontend/src/components/tabs/ExpenseTab.tsx",
+          "operation": "modify",
+          "description": "Audit and fix button visibility in ExpenseTab. Ensure Add Expense, Edit, and Delete buttons have visible backgrounds (e.g., bg-blue-600 for add, bg-yellow-600 for edit, bg-red-600 for delete), proper text colors, hover states, and consistent padding. Check icon buttons for visibility."
         },
         {
           "path": "frontend/src/components/tabs/SalesTab.tsx",
           "operation": "modify",
-          "description": "Add an 'Entered By' column to the sales records table. The backend now includes an 'enteredBy' field (string) in each Sale. Display this field in a new table column. If the field is empty or undefined, display 'Unknown'. Ensure the column is responsive and fits within the existing table layout without breaking on smaller screens."
-        },
-        {
-          "path": "frontend/src/components/tabs/AttendanceTab.tsx",
-          "operation": "modify",
-          "description": "Add an 'Entered By' column to the workers table. The backend now includes an 'enteredBy' field (string) in each Worker. Display this field in a new table column. If the field is empty or undefined, display 'Unknown'. Ensure the column is responsive and fits within the existing table layout without breaking on smaller screens."
+          "description": "Audit and fix button visibility in SalesTab. Ensure the Add Sale button and any action buttons use visible color classes (bg-blue-600 or similar), white text, proper hover states, and adequate spacing to ensure they stand out against the background."
         },
         {
           "path": "frontend/src/components/tabs/CustomersTab.tsx",
           "operation": "modify",
-          "description": "Add an 'Entered By' column to the customers table. The backend now includes an 'enteredBy' field (string) in each Customer. Display this field in a new table column. If the field is empty or undefined, display 'Unknown'. Ensure the column is responsive and fits within the existing table layout without breaking on smaller screens."
+          "description": "Audit and fix button visibility in CustomersTab. Ensure the Add Customer button and the View Purchase History action buttons have proper styling with visible backgrounds, contrasting text colors, hover effects, and consistent design system utilities."
+        },
+        {
+          "path": "frontend/src/components/tabs/AttendanceTab.tsx",
+          "operation": "modify",
+          "description": "Audit and fix button visibility in AttendanceTab. Ensure the Add Worker button and any action buttons have visible background colors (bg-blue-600 or similar), white text, hover states, and proper spacing. Verify all buttons are rendered with sufficient contrast."
         },
         {
           "path": "frontend/src/components/tabs/FarmTimeTab.tsx",
           "operation": "modify",
-          "description": "Add an 'Entered By' column to the worker daily records display (if a table view exists) or in the calendar day detail view. The backend now includes an 'enteredBy' field (string) in each WorkerDailyRecord. Display this field where daily records are shown. If the field is empty or undefined, display 'Unknown'. Ensure the display is consistent with the existing UI pattern and does not break the calendar layout."
+          "description": "Audit and fix button visibility in FarmTimeTab. Check month navigation buttons (Previous/Next) and any calendar action buttons for proper styling. Ensure they use visible color classes, proper text colors, hover states, and are clearly distinguishable from the calendar grid background."
+        },
+        {
+          "path": "frontend/src/components/tabs/SummaryTab.tsx",
+          "operation": "modify",
+          "description": "Audit and fix any button visibility issues in SummaryTab. If there are any action buttons (refresh, filters, etc.), ensure they have proper background colors, visible text, hover states, and consistent styling with the rest of the application."
+        },
+        {
+          "path": "frontend/src/pages/Dashboard.tsx",
+          "operation": "modify",
+          "description": "Audit and fix button visibility in Dashboard. Check any global action buttons, tab triggers, or navigation controls for proper styling. Ensure all interactive elements have visible backgrounds, contrasting text, and hover states that work in both light and dark modes."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Audit and fix button functionality across all tabs ensuring every button has a working onClick handler wired to the correct mutation or action",
+      "acceptanceCriteria": [
+        "Clicking each button triggers its intended action (e.g., opens a dialog, submits a form, calls a backend mutation).",
+        "No button is missing an onClick handler or has a handler that silently does nothing.",
+        "Approve and reject buttons in VerificationTab correctly call the approval workflow backend methods.",
+        "Add/edit/delete buttons in data tabs correctly open dialogs or trigger the relevant React Query mutations.",
+        "No console errors are thrown when interacting with any button."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/tabs/VerificationTab.tsx",
+          "operation": "modify",
+          "description": "Audit and wire all button onClick handlers in VerificationTab. Ensure Approve buttons call the approve mutation (useApproveUser), Reject buttons call the reject mutation (useRejectUser), and all handlers properly invalidate queries and show success/error toasts. Verify no button is missing an onClick prop or has a broken handler."
+        },
+        {
+          "path": "frontend/src/components/tabs/InventoryTab.tsx",
+          "operation": "modify",
+          "description": "Audit and wire all button onClick handlers in InventoryTab. Ensure the Add Inventory button opens the add dialog, Edit buttons open the edit dialog with pre-filled data, and Delete buttons trigger the delete mutation. Verify all handlers are connected to the correct React Query mutations (useAddInventoryItem, useUpdateInventoryItem) and handle errors properly."
+        },
+        {
+          "path": "frontend/src/components/tabs/IncomeTab.tsx",
+          "operation": "modify",
+          "description": "Audit and wire all button onClick handlers in IncomeTab. Ensure the Add Income button opens the add dialog and the form submission triggers the useAddIncome mutation. Verify the handler properly invalidates the income query and shows toast notifications on success or error."
+        },
+        {
+          "path": "frontend/src/components/tabs/ExpenseTab.tsx",
+          "operation": "modify",
+          "description": "Audit and wire all button onClick handlers in ExpenseTab. Ensure Add Expense button opens the add dialog, Edit buttons open the edit dialog with the correct expense data, and Delete buttons trigger the useDeleteExpense mutation. Verify all handlers call the appropriate mutations and handle success/error states with toasts."
+        },
+        {
+          "path": "frontend/src/components/tabs/SalesTab.tsx",
+          "operation": "modify",
+          "description": "Audit and wire all button onClick handlers in SalesTab. Ensure the Add Sale button opens the add dialog and the form submission calls the useAddSale mutation. Verify the handler properly passes customerId, inventoryItemId, quantity, and unitPrice, and shows appropriate feedback."
+        },
+        {
+          "path": "frontend/src/components/tabs/CustomersTab.tsx",
+          "operation": "modify",
+          "description": "Audit and wire all button onClick handlers in CustomersTab. Ensure the Add Customer button opens the add dialog, View Purchase History buttons open the purchase history dialog for the correct customer, and form submissions call the useAddCustomer mutation. Verify all handlers work correctly and show toast notifications."
+        },
+        {
+          "path": "frontend/src/components/tabs/AttendanceTab.tsx",
+          "operation": "modify",
+          "description": "Audit and wire all button onClick handlers in AttendanceTab. Ensure the Add Worker button opens the add worker dialog and the form submission triggers the useAddWorker mutation. Verify the handler properly passes name and role, invalidates the workers query, and shows success/error toasts."
+        },
+        {
+          "path": "frontend/src/components/tabs/FarmTimeTab.tsx",
+          "operation": "modify",
+          "description": "Audit and wire all button onClick handlers in FarmTimeTab. Ensure month navigation buttons (Previous/Next) correctly update the displayed month, calendar cell clicks open the attendance recording dialog, and form submissions call the useRecordWorkerDay mutation with proper date, workerId, and time parameters. Verify all handlers work without console errors."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Review and ensure all mutation hooks (useApproveUser, useRejectUser, useAddInventoryItem, useUpdateInventoryItem, useDeleteExpense, useAddIncome, useAddSale, useAddCustomer, useAddWorker, useRecordWorkerDay) are properly defined, call the correct backend methods, invalidate dependent queries on success, and show appropriate toast notifications for success and error states."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Verify that the 'Entered By' column and its associated UI controls are fully wired to the backend enteredBy field in all relevant tabs, ensuring data is both saved and displayed correctly",
+      "acceptanceCriteria": [
+        "The 'Entered By' column is visible in all data tables where it was introduced.",
+        "When a record is added, the enteredBy field is populated with the current user's name.",
+        "Existing records migrated by migration.mo display 'unknown' in the Entered By column."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/tabs/InventoryTab.tsx",
+          "operation": "modify",
+          "description": "Verify the Entered By column is present in the inventory table and displays the enteredBy field from each InventoryItem. Ensure the column header is labeled 'Entered By' and the data is rendered correctly for all rows, showing 'unknown' for migrated records and the user's name for new records."
+        },
+        {
+          "path": "frontend/src/components/tabs/IncomeTab.tsx",
+          "operation": "modify",
+          "description": "Verify the Entered By column is present in the income records table and displays the enteredBy field from each IncomeRecord. Ensure the column is visible and correctly shows 'unknown' for legacy records and the current user's name for newly added income records."
+        },
+        {
+          "path": "frontend/src/components/tabs/ExpenseTab.tsx",
+          "operation": "modify",
+          "description": "Verify the Entered By column is present in the expense records table and displays the enteredBy field from each ExpenseRecord. Ensure all rows show the enteredBy value correctly, with 'unknown' for migrated data and the user's name for new expenses."
+        },
+        {
+          "path": "frontend/src/components/tabs/SalesTab.tsx",
+          "operation": "modify",
+          "description": "Verify the Entered By column is present in the sales table and displays the enteredBy field from each Sale. Ensure the column renders properly for all sales records, showing 'unknown' for legacy data and the current user's name for new sales."
+        },
+        {
+          "path": "frontend/src/components/tabs/CustomersTab.tsx",
+          "operation": "modify",
+          "description": "Verify the Entered By column is present in the customers table and displays the enteredBy field from each Customer. Ensure the column is visible in the table and correctly shows the enteredBy value for all customer records."
+        },
+        {
+          "path": "frontend/src/components/tabs/AttendanceTab.tsx",
+          "operation": "modify",
+          "description": "Verify the Entered By column is present in the workers table and displays the enteredBy field from each Worker. Ensure the column header is labeled 'Entered By' and all rows display the correct enteredBy value."
+        },
+        {
+          "path": "frontend/src/components/tabs/FarmTimeTab.tsx",
+          "operation": "modify",
+          "description": "Verify that WorkerDailyRecord entries display or track the enteredBy field if relevant to the calendar view. If the Entered By information is shown in tooltips, detail views, or attendance dialogs, ensure it is correctly rendered from the enteredBy field in WorkerDailyRecord."
         }
       ]
     }

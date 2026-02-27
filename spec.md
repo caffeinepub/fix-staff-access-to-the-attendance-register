@@ -1,15 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Complete the admin approval workflow and add an "Entered By" column to all entry tables across the application.
+**Goal:** Fix all non-functional and invisible buttons introduced in the latest version across every tab of the application, and ensure the "Entered By" field is fully wired to the backend.
 
 **Planned changes:**
-- Add a backend query to list all users with pending approval status
-- Ensure approve and reject functions correctly update and persist user approval status
-- Migrate existing users without an approval status to an appropriate default in `migration.mo`
-- Update the VerificationTab to fetch and display pending users with their name, ID, status, and Approve/Reject buttons
-- Add an `enteredBy` field to all entry record types (Income, Expenses, Inventory, Sales, Attendance, Customers), automatically set to the caller's principal on creation
-- Handle existing records without `enteredBy` gracefully (display "Unknown")
-- Add an "Entered By" column to the tables in IncomeTab, ExpenseTab, InventoryTab, SalesTab, AttendanceTab, and CustomersTab
+- Audit and fix button visibility across all tabs (VerificationTab, InventoryTab, IncomeTab, ExpenseTab, SalesTab, CustomersTab, AttendanceTab, FarmTimeTab, SummaryTab, and Dashboard) so every button has proper background color, text color, and contrast in both light and dark mode.
+- Audit and fix all button onClick handlers across every tab to ensure approve/reject, add/edit/delete, and other actions correctly trigger their intended operations (dialog opens, form submissions, or backend mutations) without console errors.
+- Verify and wire the "Entered By" column and its UI controls in InventoryTab, IncomeTab, ExpenseTab, and SalesTab so the `enteredBy` field is saved with the current user's name on new records and displayed correctly in all relevant data tables.
 
-**User-visible outcome:** Admins can view, approve, and reject pending user registrations from the VerificationTab, and all entry tables now show which user created each record in a dedicated "Entered By" column.
+**User-visible outcome:** All buttons across every tab are visually distinct and fully functional when clicked, and the "Entered By" column correctly shows who entered each record.
