@@ -1,74 +1,41 @@
 {
   "kind": "build_request",
-  "title": "Fix non-functional and invisible new buttons",
-  "priority": "high",
+  "title": "Collapse navigation buttons into a dropdown menu",
+  "projectName": "Pepper Farm Bookkeeping",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Audit all recently added buttons across every tab (VerificationTab, InventoryTab, IncomeTab, ExpenseTab, SalesTab, CustomersTab, AttendanceTab, FarmTimeTab, SummaryTab, and Dashboard) and ensure every button is rendered with visible styling — correct background color, text color, and sufficient contrast — so no button appears invisible or blends into its background.",
+      "text": "Replace the flat row of navigation buttons (Dashboard, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time) in the Dashboard with a single dropdown menu trigger. Clicking the trigger opens a dropdown listing all sections; selecting an item navigates to that tab and closes the dropdown.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-4"
         ],
         "quotes": [
-          "Some new buttons are not functional and are not visible"
+          "Can you put these buttons in a dropdown menu. Dashboard\nIncome\nExpenses\nInventory\nCustomers\nSales\nAttendance\nFarm Time"
         ]
       },
       "acceptanceCriteria": [
-        "All buttons added in the latest version are visually visible with legible text and distinct styling.",
-        "No button has transparent, white-on-white, or otherwise invisible styling in either light or dark mode.",
-        "Buttons use consistent Tailwind utility classes aligned with the existing design system color tokens."
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "text": "Audit all recently added buttons across every tab and ensure every button has a working onClick handler wired to the correct mutation or action — including approve/reject in VerificationTab, add/edit/delete in InventoryTab, IncomeTab, ExpenseTab, SalesTab, CustomersTab, and AttendanceTab — so that clicking each button triggers the intended operation without errors.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-latest"
-        ],
-        "quotes": [
-          "Some new buttons are not functional and are not visible"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Clicking each button triggers its intended action (e.g., opens a dialog, submits a form, calls a backend mutation).",
-        "No button is missing an onClick handler or has a handler that silently does nothing.",
-        "Approve and reject buttons in VerificationTab correctly call the approval workflow backend methods.",
-        "Add/edit/delete buttons in data tabs correctly open dialogs or trigger the relevant React Query mutations.",
-        "No console errors are thrown when interacting with any button."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Verify that the 'Entered By' column and its associated UI controls introduced in the recent version are fully wired to the backend enteredBy field in all relevant tabs (InventoryTab, IncomeTab, ExpenseTab, SalesTab), ensuring data is both saved and displayed correctly.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-latest"
-        ],
-        "quotes": [
-          "Some new buttons are not functional and are not visible"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The 'Entered By' column is visible in all data tables where it was introduced.",
-        "When a record is added, the enteredBy field is populated with the current user's name.",
-        "Existing records migrated by migration.mo display 'unknown' in the Entered By column."
+        "A single dropdown trigger button is visible in place of the individual navigation buttons.",
+        "Opening the dropdown reveals all eight items: Dashboard, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time.",
+        "Clicking any dropdown item switches the active tab to the corresponding section.",
+        "The dropdown closes automatically after a selection is made.",
+        "The currently active section is visually highlighted in the dropdown list.",
+        "The dropdown is keyboard-accessible (open/close with Enter/Escape, navigate with arrow keys)."
       ]
     }
   ],
   "constraints": [
-    "Do not change backend data models or stable variable structures.",
-    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui.",
-    "Preserve all existing working functionality — only fix broken or invisible buttons."
+    "Do not modify files under frontend/src/hooks/ or frontend/src/components/ui.",
+    "Preserve all existing tab content components (SummaryTab, IncomeTab, ExpenseTab, InventoryTab, CustomersTab, SalesTab, AttendanceTab, FarmTimeTab, VerificationTab) — only the navigation trigger changes.",
+    "Admin-only Verification tab must remain hidden from non-admin users as before."
   ],
   "nonGoals": [
-    "Adding new features beyond fixing existing broken/invisible buttons.",
-    "Redesigning the overall UI layout or color theme.",
-    "Changing authentication or authorization logic."
+    "Changing any backend logic or data models.",
+    "Restructuring routing or adding new pages.",
+    "Modifying individual tab content components.",
+    "Adding new navigation items beyond those listed."
   ],
   "imageRequirements": {
     "required": [],

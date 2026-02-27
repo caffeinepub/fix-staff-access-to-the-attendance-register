@@ -1,11 +1,14 @@
 # Specification
 
 ## Summary
-**Goal:** Fix all non-functional and invisible buttons introduced in the latest version across every tab of the application, and ensure the "Entered By" field is fully wired to the backend.
+**Goal:** Replace the flat row of navigation buttons in the Dashboard with a single dropdown menu that lists all sections.
 
 **Planned changes:**
-- Audit and fix button visibility across all tabs (VerificationTab, InventoryTab, IncomeTab, ExpenseTab, SalesTab, CustomersTab, AttendanceTab, FarmTimeTab, SummaryTab, and Dashboard) so every button has proper background color, text color, and contrast in both light and dark mode.
-- Audit and fix all button onClick handlers across every tab to ensure approve/reject, add/edit/delete, and other actions correctly trigger their intended operations (dialog opens, form submissions, or backend mutations) without console errors.
-- Verify and wire the "Entered By" column and its UI controls in InventoryTab, IncomeTab, ExpenseTab, and SalesTab so the `enteredBy` field is saved with the current user's name on new records and displayed correctly in all relevant data tables.
+- Remove the individual navigation buttons (Dashboard, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time) from the Dashboard header/nav area.
+- Add a single dropdown trigger button that opens a menu listing all eight sections.
+- Selecting a menu item navigates to that tab and closes the dropdown.
+- Highlight the currently active section in the dropdown list.
+- Ensure the dropdown is keyboard-accessible (Enter/Escape to open/close, arrow keys to navigate).
+- Keep the admin-only Verification tab hidden from non-admin users as before.
 
-**User-visible outcome:** All buttons across every tab are visually distinct and fully functional when clicked, and the "Entered By" column correctly shows who entered each record.
+**User-visible outcome:** Users see a single dropdown menu trigger instead of a row of buttons; clicking it reveals all navigation options, and selecting one switches to that section.

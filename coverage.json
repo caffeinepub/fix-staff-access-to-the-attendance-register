@@ -1,72 +1,34 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-27T00:06:41.906Z",
+  "generatedAt": "2026-02-27T00:19:30.937Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 0,
+    "total": 1,
+    "implemented": 1,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Audit all recently added buttons across every tab (VerificationTab, InventoryTab, IncomeTab, ExpenseTab, SalesTab, CustomersTab, AttendanceTab, FarmTimeTab, SummaryTab, and Dashboard) and ensure every button is rendered with visible styling — correct background color, text color, and sufficient contrast — so no button appears invisible or blends into its background.",
-        "status": "missing",
+        "summary": "Replace the flat row of navigation buttons (Dashboard, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time) in the Dashboard with a single dropdown menu trigger. Clicking the trigger opens a dropdown listing all sections; selecting an item navigates to that tab and closes the dropdown.",
+        "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/tabs/VerificationTab.tsx",
-          "frontend/src/components/tabs/InventoryTab.tsx",
-          "frontend/src/components/tabs/IncomeTab.tsx",
-          "frontend/src/components/tabs/ExpenseTab.tsx",
-          "frontend/src/components/tabs/SalesTab.tsx",
-          "frontend/src/components/tabs/CustomersTab.tsx",
-          "frontend/src/components/tabs/AttendanceTab.tsx",
-          "frontend/src/components/tabs/FarmTimeTab.tsx",
-          "frontend/src/components/tabs/SummaryTab.tsx",
           "frontend/src/pages/Dashboard.tsx"
         ],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-2",
-        "summary": "Audit all recently added buttons across every tab and ensure every button has a working onClick handler wired to the correct mutation or action — including approve/reject in VerificationTab, add/edit/delete in InventoryTab, IncomeTab, ExpenseTab, SalesTab, CustomersTab, and AttendanceTab — so that clicking each button triggers the intended operation without errors.",
-        "status": "missing",
-        "plannedFiles": [
-          "frontend/src/components/tabs/VerificationTab.tsx",
-          "frontend/src/components/tabs/InventoryTab.tsx",
-          "frontend/src/components/tabs/IncomeTab.tsx",
-          "frontend/src/components/tabs/ExpenseTab.tsx",
-          "frontend/src/components/tabs/SalesTab.tsx",
-          "frontend/src/components/tabs/CustomersTab.tsx",
-          "frontend/src/components/tabs/AttendanceTab.tsx",
-          "frontend/src/components/tabs/FarmTimeTab.tsx",
-          "frontend/src/hooks/useQueries.ts"
-        ],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Verify that the 'Entered By' column and its associated UI controls introduced in the recent version are fully wired to the backend enteredBy field in all relevant tabs (InventoryTab, IncomeTab, ExpenseTab, SalesTab), ensuring data is both saved and displayed correctly.",
-        "status": "missing",
-        "plannedFiles": [
-          "frontend/src/components/tabs/InventoryTab.tsx",
-          "frontend/src/components/tabs/IncomeTab.tsx",
-          "frontend/src/components/tabs/ExpenseTab.tsx",
-          "frontend/src/components/tabs/SalesTab.tsx",
-          "frontend/src/components/tabs/CustomersTab.tsx",
-          "frontend/src/components/tabs/AttendanceTab.tsx",
-          "frontend/src/components/tabs/FarmTimeTab.tsx"
-        ],
-        "matchedFiles": []
+        "matchedFiles": [
+          "frontend/src/pages/Dashboard.tsx"
+        ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
+    "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/src/pages/Dashboard.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

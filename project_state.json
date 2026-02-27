@@ -1,40 +1,30 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "New project",
+  "summary": "A farm management app with a navigation dropdown menu containing: Dashboard, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time sections.",
   "architectural_notes": [],
-  "known_issues": [
-    "Some new buttons are not functional and not visible"
-  ],
-  "isFixRequest": true,
-  "existing_features": [],
-  "new_feature_requests": [
+  "known_issues": [],
+  "isFixRequest": false,
+  "existing_features": [
     {
-      "id": "AR-1",
-      "summary": "Audit all recently added buttons across every tab (VerificationTab, InventoryTab, IncomeTab, ExpenseTab, SalesTab, CustomersTab, AttendanceTab, FarmTimeTab, SummaryTab, and Dashboard) and ensure every button is rendered with visible styling — correct background color, text color, and sufficient contrast — so no button appears invisible or blends into its background.",
+      "id": "feature-replace-the-flat-row-of-navigation-buttons-dashboard-income-expenses-inventory-customers-sales-attendance-farm-time-in-the-dashboard-with-a-single-dropdown-menu-trigger-clicking-the-trigger-opens-a-dropdown-listing-all-sections-selecting-an-item-navigates-to-that-tab-and-closes-the-dropdown",
+      "title": "Replace the flat row of navigation buttons (Dashboard, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time) in the Dashboard with a single dropdown menu trigger. Clicking the trigger opens a dropdown listing all sections; selecting an item navigates to that tab and closes the dropdown.",
       "reqIds": [
         "REQ-1"
       ],
-      "status": "pending"
-    },
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
     {
-      "id": "AR-2",
-      "summary": "Audit all recently added buttons across every tab and ensure every button has a working onClick handler wired to the correct mutation or action — including approve/reject in VerificationTab, add/edit/delete in InventoryTab, IncomeTab, ExpenseTab, SalesTab, CustomersTab, and AttendanceTab — so that clicking each button triggers the intended operation without errors.",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Verify that the 'Entered By' column and its associated UI controls introduced in the recent version are fully wired to the backend enteredBy field in all relevant tabs (InventoryTab, IncomeTab, ExpenseTab, SalesTab), ensuring data is both saved and displayed correctly.",
-      "reqIds": [
-        "REQ-3"
-      ],
+      "id": "AR-1",
+      "summary": "Put navigation buttons (Dashboard, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time) into a dropdown menu",
+      "reqIds": [],
       "status": "pending"
     }
   ],
-  "projectName": "Fix non-functional and invisible new buttons",
+  "gameProjectType": "none",
+  "projectName": "Pepper Farm Bookkeeping",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }
