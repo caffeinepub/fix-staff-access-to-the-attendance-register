@@ -2,13 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-block-access-to-the-dashboard-for-users-whose-account-status-is-pending-or-rejected-show-a-dedicated-waiting-screen-for-pending-users-explaining-that-their-account-is-awaiting-admin-approval-and-a-rejection-notice-for-rejected-users",
-      "featureTitle": "Block access to the dashboard for users whose account status is 'pending' or 'rejected'. Show a dedicated waiting screen for pending users explaining that their account is awaiting admin approval, and a rejection notice for rejected users.",
+      "featureId": "feature-update-the-verificationtab-component-to-correctly-fetch-and-display-the-list-of-pending-users-using-the-completed-backend-query-from-req-1-showing-each-user-s-name-principal-id-and-current-status-with-approve-reject-action-buttons",
+      "featureTitle": "Update the VerificationTab component to correctly fetch and display the list of pending users using the completed backend query from REQ-1, showing each user's name, principal/ID, and current status with Approve/Reject action buttons.",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/RejectedScreen.tsx",
-        "frontend/src/components/WaitingForApprovalScreen.tsx",
-        "frontend/src/hooks/useQueries.ts"
+        "frontend/src/components/tabs/VerificationTab.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -20,16 +17,21 @@
         "user-approval@3.0.0"
       ],
       "testIds": [
-        "REQ-3"
+        "REQ-2"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-a-user-verification-admin-panel-accessible-only-to-verified-users-in-the-dashboard-this-panel-lists-all-pending-users-with-their-name-and-registration-date-and-provides-approve-and-reject-action-buttons-for-each",
-      "featureTitle": "Add a 'User Verification' admin panel accessible only to verified users in the dashboard. This panel lists all pending users with their name and registration date, and provides Approve and Reject action buttons for each.",
+      "featureId": "feature-add-an-entered-by-column-to-the-data-tables-in-incometab-expensetab-inventorytab-salestab-attendancetab-and-customerstab-display-the-name-or-identifier-of-the-user-who-created-each-record",
+      "featureTitle": "Add an 'Entered By' column to the data tables in IncomeTab, ExpenseTab, InventoryTab, SalesTab, AttendanceTab, and CustomersTab. Display the name or identifier of the user who created each record.",
       "files": [
-        "frontend/src/components/tabs/VerificationTab.tsx",
-        "frontend/src/pages/Dashboard.tsx"
+        "frontend/src/components/tabs/AttendanceTab.tsx",
+        "frontend/src/components/tabs/CustomersTab.tsx",
+        "frontend/src/components/tabs/ExpenseTab.tsx",
+        "frontend/src/components/tabs/FarmTimeTab.tsx",
+        "frontend/src/components/tabs/IncomeTab.tsx",
+        "frontend/src/components/tabs/InventoryTab.tsx",
+        "frontend/src/components/tabs/SalesTab.tsx"
       ],
       "components": [
         "authorization@4.0.0",

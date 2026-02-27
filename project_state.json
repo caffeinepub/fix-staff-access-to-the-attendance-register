@@ -1,24 +1,22 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "App with a user verification process where existing users act as admins to verify new users.",
-  "architectural_notes": [
-    "Existing users have admin privileges to verify/approve new user registrations"
-  ],
+  "summary": "Application with user verification flow, admin approval logic, and entry tracking features.",
+  "architectural_notes": [],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-block-access-to-the-dashboard-for-users-whose-account-status-is-pending-or-rejected-show-a-dedicated-waiting-screen-for-pending-users-explaining-that-their-account-is-awaiting-admin-approval-and-a-rejection-notice-for-rejected-users",
-      "title": "Block access to the dashboard for users whose account status is 'pending' or 'rejected'. Show a dedicated waiting screen for pending users explaining that their account is awaiting admin approval, and a rejection notice for rejected users.",
+      "id": "feature-update-the-verificationtab-component-to-correctly-fetch-and-display-the-list-of-pending-users-using-the-completed-backend-query-from-req-1-showing-each-user-s-name-principal-id-and-current-status-with-approve-reject-action-buttons",
+      "title": "Update the VerificationTab component to correctly fetch and display the list of pending users using the completed backend query from REQ-1, showing each user's name, principal/ID, and current status with Approve/Reject action buttons.",
       "reqIds": [
-        "REQ-3"
+        "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-a-user-verification-admin-panel-accessible-only-to-verified-users-in-the-dashboard-this-panel-lists-all-pending-users-with-their-name-and-registration-date-and-provides-approve-and-reject-action-buttons-for-each",
-      "title": "Add a 'User Verification' admin panel accessible only to verified users in the dashboard. This panel lists all pending users with their name and registration date, and provides Approve and Reject action buttons for each.",
+      "id": "feature-add-an-entered-by-column-to-the-data-tables-in-incometab-expensetab-inventorytab-salestab-attendancetab-and-customerstab-display-the-name-or-identifier-of-the-user-who-created-each-record",
+      "title": "Add an 'Entered By' column to the data tables in IncomeTab, ExpenseTab, InventoryTab, SalesTab, AttendanceTab, and CustomersTab. Display the name or identifier of the user who created each record.",
       "reqIds": [
         "REQ-4"
       ],
@@ -28,37 +26,34 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Verification process for new users, with existing/old users acting as admins to approve or verify new user registrations",
+      "summary": "Complete admin approval logic: list pending users, approve/reject, migrate existing users to verified",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Add a pending verification state to the user profile model in the backend. When a new user completes profile setup, their account status must be set to 'pending' until approved by an existing verified user.",
+      "summary": "Add a column to show the user who entered each entry",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Complete the admin approval workflow in the backend: add a function to list all pending users awaiting approval, ensure approve and reject functions work correctly, and migrate any existing users without a verified status to a default 'pending' or 'verified' state as appropriate.",
       "reqIds": [
         "REQ-1"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-3",
-      "summary": "Add backend functions for admin (verified) users to list all pending users, approve a pending user (set status to 'verified'), and reject a pending user (set status to 'rejected'). Only verified users may call these functions.",
+      "id": "AR-5",
+      "summary": "Track the authenticated caller's principal (or display name) when a new entry is created for Income, Expenses, Inventory, Sales, Attendance, and Customers records. Store this 'enteredBy' field in each record's data type in the backend.",
       "reqIds": [
-        "REQ-2"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-6",
-      "summary": "Write a migration to mark all existing registered users as 'verified' so they retain full access after the verification feature is deployed.",
-      "reqIds": [
-        "REQ-5"
+        "REQ-3"
       ],
       "status": "pending"
     }
   ],
-  "gameProjectType": "none",
-  "projectName": "Pepper Farm Bookkeeping",
+  "projectName": "Complete admin approval logic and add 'Entered By' column to all entry tables",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

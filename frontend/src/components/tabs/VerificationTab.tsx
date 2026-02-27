@@ -1,297 +1,251 @@
 import { useState } from 'react';
-import { CheckCircle, XCircle, Clock, Users, ShieldCheck } from 'lucide-react';
+import { useListApprovals, useSetApproval } from '@/hooks/useQueries';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { useListApprovals, useSetApproval } from '../../hooks/useQueries';
-import { ApprovalStatus, type UserApprovalInfo } from '../../backend';
-import { Principal } from '@dfinity/principal';
-import { Skeleton } from '@/components/ui/skeleton';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Shield, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
+import { ApprovalStatus } from '@/backend';
+import { useQueryClient } from '@tanstack/react-query';
 
-function truncatePrincipal(principal: Principal): string {
-  const text = principal.toText();
-  if (text.length <= 20) return text;
-  return `${text.slice(0, 10)}...${text.slice(-6)}`;
-}
+const statusColors: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+  pending: 'secondary',
+  approved: 'default',
+  rejected: 'destructive',
+};
 
-function StatusBadge({ status }: { status: ApprovalStatus }) {
-  if (status === ApprovalStatus.approved) {
-    return (
-      <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
-        <CheckCircle className="w-3 h-3 mr-1" />
-        Approved
-      </Badge>
-    );
-  }
-  if (status === ApprovalStatus.rejected) {
-    return (
-      <Badge variant="destructive" className="opacity-80">
-        <XCircle className="w-3 h-3 mr-1" />
-        Rejected
-      </Badge>
-    );
-  }
-  return (
-    <Badge variant="outline" className="border-amber-400 text-amber-600 dark:text-amber-400">
-      <Clock className="w-3 h-3 mr-1" />
-      Pending
-    </Badge>
-  );
-}
-
-function UserRow({ info, onApprove, onReject, isLoading }: {
-  info: UserApprovalInfo;
-  onApprove: (principal: Principal) => void;
-  onReject: (principal: Principal) => void;
-  isLoading: boolean;
-}) {
-  return (
-    <TableRow>
-      <TableCell className="font-mono text-xs text-muted-foreground">
-        <span title={info.principal.toText()}>
-          {truncatePrincipal(info.principal)}
-        </span>
-      </TableCell>
-      <TableCell>
-        <StatusBadge status={info.status} />
-      </TableCell>
-      <TableCell className="text-right">
-        <div className="flex items-center justify-end gap-2">
-          {info.status !== ApprovalStatus.approved && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="default"
-                  disabled={isLoading}
-                  className="h-7 px-3 text-xs"
-                >
-                  <CheckCircle className="w-3 h-3 mr-1" />
-                  Approve
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Approve User</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to approve this user? They will gain full access to the farm management dashboard.
-                    <br /><br />
-                    <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
-                      {info.principal.toText()}
-                    </span>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => onApprove(info.principal)}>
-                    Approve
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-          {info.status !== ApprovalStatus.rejected && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={isLoading}
-                  className="h-7 px-3 text-xs border-destructive/40 text-destructive hover:bg-destructive/10"
-                >
-                  <XCircle className="w-3 h-3 mr-1" />
-                  Reject
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Reject User</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to reject this user? They will not be able to access the farm management dashboard.
-                    <br /><br />
-                    <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
-                      {info.principal.toText()}
-                    </span>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => onReject(info.principal)}
-                    className="bg-destructive hover:bg-destructive/90"
-                  >
-                    Reject
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-        </div>
-      </TableCell>
-    </TableRow>
-  );
-}
+const statusIcons: Record<string, React.ReactNode> = {
+  pending: <Clock className="h-3.5 w-3.5" />,
+  approved: <CheckCircle className="h-3.5 w-3.5" />,
+  rejected: <XCircle className="h-3.5 w-3.5" />,
+};
 
 export default function VerificationTab() {
-  const { data: approvals, isLoading, error } = useListApprovals();
-  const { mutate: setApproval, isPending } = useSetApproval();
+  const { data: approvals = [], isLoading, refetch } = useListApprovals();
+  const setApprovalMutation = useSetApproval();
+  const queryClient = useQueryClient();
   const [processingPrincipal, setProcessingPrincipal] = useState<string | null>(null);
 
-  const handleApprove = (principal: Principal) => {
-    setProcessingPrincipal(principal.toText());
-    setApproval(
-      { user: principal, status: ApprovalStatus.approved },
-      { onSettled: () => setProcessingPrincipal(null) }
-    );
+  const pending = approvals.filter(a => a.status === ApprovalStatus.pending);
+  const others = approvals.filter(a => a.status !== ApprovalStatus.pending);
+
+  const handleApprove = async (principal: string) => {
+    setProcessingPrincipal(principal);
+    try {
+      const { Principal } = await import('@dfinity/principal');
+      await setApprovalMutation.mutateAsync({
+        user: Principal.fromText(principal),
+        status: ApprovalStatus.approved,
+      });
+      await queryClient.invalidateQueries({ queryKey: ['approvals'] });
+    } finally {
+      setProcessingPrincipal(null);
+    }
   };
 
-  const handleReject = (principal: Principal) => {
-    setProcessingPrincipal(principal.toText());
-    setApproval(
-      { user: principal, status: ApprovalStatus.rejected },
-      { onSettled: () => setProcessingPrincipal(null) }
-    );
+  const handleReject = async (principal: string) => {
+    setProcessingPrincipal(principal);
+    try {
+      const { Principal } = await import('@dfinity/principal');
+      await setApprovalMutation.mutateAsync({
+        user: Principal.fromText(principal),
+        status: ApprovalStatus.rejected,
+      });
+      await queryClient.invalidateQueries({ queryKey: ['approvals'] });
+    } finally {
+      setProcessingPrincipal(null);
+    }
   };
-
-  const pendingUsers = approvals?.filter(a => a.status === ApprovalStatus.pending) ?? [];
-  const otherUsers = approvals?.filter(a => a.status !== ApprovalStatus.pending) ?? [];
-
-  if (error) {
-    return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <XCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
-          <p className="text-muted-foreground">Failed to load user approvals. You may not have admin access.</p>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle>User Verification</CardTitle>
-              <CardDescription>
-                Review and approve new users requesting access to the farm management system.
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">User Verification</h2>
+          <p className="text-muted-foreground text-sm mt-1">Manage user access and approval requests</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2 self-start sm:self-auto">
+          <RefreshCw className="h-4 w-4" />
+          Refresh
+        </Button>
+      </div>
 
-      {/* Pending Users */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-500" />
-              Pending Approval
-              {pendingUsers.length > 0 && (
-                <Badge variant="outline" className="border-amber-400 text-amber-600 dark:text-amber-400 ml-1">
-                  {pendingUsers.length}
-                </Badge>
-              )}
-            </CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map(i => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : pendingUsers.length === 0 ? (
-            <div className="text-center py-10">
-              <Users className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
-              <p className="text-muted-foreground text-sm">No pending approval requests</p>
-              <p className="text-muted-foreground/60 text-xs mt-1">
-                New users who request access will appear here.
-              </p>
-            </div>
-          ) : (
+      {/* Pending Requests */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Shield className="h-5 w-5 text-primary" />
+          <h3 className="text-lg font-semibold">Pending Requests</h3>
+          {pending.length > 0 && (
+            <Badge variant="secondary" className="ml-1">{pending.length}</Badge>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-border overflow-hidden">
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Principal ID</TableHead>
+                <TableRow className="bg-muted/50">
+                  <TableHead>Principal</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pendingUsers.map(info => (
-                  <UserRow
-                    key={info.principal.toText()}
-                    info={info}
-                    onApprove={handleApprove}
-                    onReject={handleReject}
-                    isLoading={isPending && processingPrincipal === info.principal.toText()}
-                  />
-                ))}
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">Loading approval requests...</TableCell>
+                  </TableRow>
+                ) : pending.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                      <div className="flex flex-col items-center gap-2">
+                        <CheckCircle className="h-8 w-8 text-primary/40" />
+                        <span>No pending approval requests</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  pending.map(approval => {
+                    const principalStr = approval.principal.toString();
+                    const isProcessing = processingPrincipal === principalStr;
+                    return (
+                      <TableRow key={principalStr} className="hover:bg-muted/30">
+                        <TableCell className="font-mono text-xs break-all max-w-xs">{principalStr}</TableCell>
+                        <TableCell>
+                          <Badge variant={statusColors[approval.status] ?? 'outline'} className="gap-1">
+                            {statusIcons[approval.status]}
+                            {approval.status.charAt(0).toUpperCase() + approval.status.slice(1)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            {/* Approve */}
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="default" disabled={isProcessing} className="gap-1">
+                                  <CheckCircle className="h-3.5 w-3.5" />
+                                  Approve
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Approve User</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Grant access to this user? They will be able to view all farm data.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleApprove(principalStr)} disabled={isProcessing}>
+                                    {isProcessing ? 'Processing...' : 'Approve'}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+
+                            {/* Reject */}
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="destructive" disabled={isProcessing} className="gap-1">
+                                  <XCircle className="h-3.5 w-3.5" />
+                                  Reject
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Reject User</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Deny access to this user? They will see a rejection message when they log in.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleReject(principalStr)}
+                                    disabled={isProcessing}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    {isProcessing ? 'Processing...' : 'Reject'}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+      </div>
 
       {/* All Users */}
-      {!isLoading && otherUsers.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Users className="w-4 h-4 text-muted-foreground" />
-              All Users
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Principal ID</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {otherUsers.map(info => (
-                  <UserRow
-                    key={info.principal.toText()}
-                    info={info}
-                    onApprove={handleApprove}
-                    onReject={handleReject}
-                    isLoading={isPending && processingPrincipal === info.principal.toText()}
-                  />
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+      {others.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold">All Users</h3>
+          <div className="rounded-xl border border-border overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead>Principal</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {others.map(approval => {
+                    const principalStr = approval.principal.toString();
+                    const isProcessing = processingPrincipal === principalStr;
+                    return (
+                      <TableRow key={principalStr} className="hover:bg-muted/30">
+                        <TableCell className="font-mono text-xs break-all max-w-xs">{principalStr}</TableCell>
+                        <TableCell>
+                          <Badge variant={statusColors[approval.status] ?? 'outline'} className="gap-1">
+                            {statusIcons[approval.status]}
+                            {approval.status.charAt(0).toUpperCase() + approval.status.slice(1)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            {approval.status !== ApprovalStatus.approved && (
+                              <Button
+                                size="sm"
+                                variant="default"
+                                disabled={isProcessing}
+                                className="gap-1"
+                                onClick={() => handleApprove(principalStr)}
+                              >
+                                <CheckCircle className="h-3.5 w-3.5" />
+                                Approve
+                              </Button>
+                            )}
+                            {approval.status !== ApprovalStatus.rejected && (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                disabled={isProcessing}
+                                className="gap-1"
+                                onClick={() => handleReject(principalStr)}
+                              >
+                                <XCircle className="h-3.5 w-3.5" />
+                                Reject
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

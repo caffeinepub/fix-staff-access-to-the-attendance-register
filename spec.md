@@ -1,13 +1,15 @@
 # Specification
 
 ## Summary
-**Goal:** Add a user verification process where new users must be approved by existing (verified) users before accessing the app.
+**Goal:** Complete the admin approval workflow and add an "Entered By" column to all entry tables across the application.
 
 **Planned changes:**
-- Add a `status` field (pending, verified, rejected) to user profiles in the backend
-- Migrate all existing users to `verified` status so they retain full access
-- Add backend functions (`getPendingUsers`, `approveUser`, `rejectUser`) accessible only to verified users
-- Show a "Waiting for Approval" screen to pending users and a rejection notice to rejected users instead of the dashboard
-- Add a "User Verification" panel in the dashboard (visible to verified users only) that lists pending users with Approve and Reject buttons
+- Add a backend query to list all users with pending approval status
+- Ensure approve and reject functions correctly update and persist user approval status
+- Migrate existing users without an approval status to an appropriate default in `migration.mo`
+- Update the VerificationTab to fetch and display pending users with their name, ID, status, and Approve/Reject buttons
+- Add an `enteredBy` field to all entry record types (Income, Expenses, Inventory, Sales, Attendance, Customers), automatically set to the caller's principal on creation
+- Handle existing records without `enteredBy` gracefully (display "Unknown")
+- Add an "Entered By" column to the tables in IncomeTab, ExpenseTab, InventoryTab, SalesTab, AttendanceTab, and CustomersTab
 
-**User-visible outcome:** New users who register are held in a pending state and see a waiting screen until an existing verified farm member approves them from a dedicated verification panel in the dashboard.
+**User-visible outcome:** Admins can view, approve, and reject pending user registrations from the VerificationTab, and all entry tables now show which user created each record in a dedicated "Entered By" column.

@@ -5,10 +5,14 @@ import Order "mo:core/Order";
 import Runtime "mo:core/Runtime";
 import Principal "mo:core/Principal";
 import Nat "mo:core/Nat";
+import Iter "mo:core/Iter";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 import UserApproval "user-approval/approval";
+import Migration "migration";
+import Text "mo:core/Text";
 
+(with migration = Migration.run)
 actor {
   // Initialize the user system state
   let accessControlState = AccessControl.initState();
@@ -96,6 +100,40 @@ actor {
     UserApproval.listApprovals(approvalState);
   };
 
+  public query ({ caller }) func listPendingUsers() : async [UserProfile] {
+    if (not isAdminOrAutoAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only admins can view this");
+    };
+
+    let pendingUsers = List.empty<UserProfile>();
+
+    for (user in userProfiles.entries()) {
+      let (principal, profile) = user;
+      // Skip auto registered admins as they are always considered Admins
+      if (not autoRegisteredAdmins.containsKey(principal) and not AccessControl.isAdmin(accessControlState, principal)) {
+        let isApproved = UserApproval.isApproved(approvalState, principal);
+        if (not isApproved) {
+          pendingUsers.add(profile);
+        };
+      };
+    };
+    pendingUsers.toArray();
+  };
+
+  public shared ({ caller }) func approveUser(user : Principal) : async () {
+    if (not isAdminOrAutoAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+    UserApproval.setApproval(approvalState, user, #approved);
+  };
+
+  public shared ({ caller }) func rejectUser(user : Principal) : async () {
+    if (not isAdminOrAutoAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+    UserApproval.setApproval(approvalState, user, #rejected);
+  };
+
   // Application Types
   type IncomeSource = {
     #market;
@@ -126,6 +164,7 @@ actor {
     itemType : ItemType;
     quantity : Nat;
     costPerUnit : Float;
+    enteredBy : Text;
   };
 
   public type Customer = {
@@ -133,6 +172,7 @@ actor {
     name : Text;
     contactDetails : Text;
     customerType : Text;
+    enteredBy : Text;
   };
 
   public type IncomeRecord = {
@@ -141,6 +181,7 @@ actor {
     date : Time.Time;
     source : IncomeSource;
     description : Text;
+    enteredBy : Text;
   };
 
   public type ExpenseRecord = {
@@ -149,6 +190,7 @@ actor {
     date : Time.Time;
     category : ExpenseType;
     description : Text;
+    enteredBy : Text;
   };
 
   public type Sale = {
@@ -158,6 +200,7 @@ actor {
     inventoryItemId : Nat;
     quantity : Nat;
     unitPrice : Float;
+    enteredBy : Text;
   };
 
   // Worker Month Calendar Types
@@ -165,6 +208,7 @@ actor {
     id : Nat;
     name : Text;
     role : Text;
+    enteredBy : Text;
   };
 
   public type WorkerDailyRecord = {
@@ -174,6 +218,7 @@ actor {
     arrivalTime : ?Time.Time; // NANOS
     departureTime : ?Time.Time; // NANOS
     timeOnFarm : ?Int; // NANOS
+    enteredBy : Text;
   };
 
   // Old Attendance Types
@@ -240,6 +285,13 @@ actor {
     };
   };
 
+  func getCallerNameOrPrincipal(caller : Principal) : Text {
+    switch (userProfiles.get(caller)) {
+      case (null) { caller.toText() };
+      case (?profile) { profile.name };
+    };
+  };
+
   public shared ({ caller }) func addInventoryItem(name : Text, itemType : ItemType, quantity : Nat, costPerUnit : Float) : async Nat {
     // Admin only (including auto-registered admins)
     if (not isAdminOrAutoAdmin(caller)) {
@@ -253,6 +305,7 @@ actor {
       itemType;
       quantity;
       costPerUnit;
+      enteredBy = getCallerNameOrPrincipal(caller);
     };
     inventory.add(id, item);
     id;
@@ -272,6 +325,7 @@ actor {
           itemType;
           quantity;
           costPerUnit;
+          enteredBy = getCallerNameOrPrincipal(caller);
         };
         inventory.add(id, item);
       };
@@ -290,6 +344,7 @@ actor {
       name;
       contactDetails;
       customerType;
+      enteredBy = getCallerNameOrPrincipal(caller);
     };
     customers.add(id, customer);
     id;
@@ -309,6 +364,7 @@ actor {
       date;
       source;
       description;
+      enteredBy = getCallerNameOrPrincipal(caller);
     };
     incomeRecords.add(id, record);
     id;
@@ -327,6 +383,7 @@ actor {
       date;
       category;
       description;
+      enteredBy = getCallerNameOrPrincipal(caller);
     };
     expenseRecords.add(id, record);
     id;
@@ -346,6 +403,7 @@ actor {
           date;
           category;
           description;
+          enteredBy = getCallerNameOrPrincipal(caller);
         };
         expenseRecords.add(id, updatedExpense);
       };
@@ -390,6 +448,7 @@ actor {
       inventoryItemId;
       quantity;
       unitPrice;
+      enteredBy = getCallerNameOrPrincipal(caller);
     };
     sales.add(id, sale);
 
@@ -399,6 +458,7 @@ actor {
       itemType = item.itemType;
       quantity = item.quantity - quantity;
       costPerUnit = item.costPerUnit;
+      enteredBy = item.enteredBy;
     };
     inventory.add(item.id, updatedItem);
 
@@ -466,6 +526,7 @@ actor {
       id;
       name;
       role;
+      enteredBy = getCallerNameOrPrincipal(caller);
     };
     workers.add(id, worker);
     id;
@@ -494,6 +555,7 @@ actor {
           arrivalTime;
           departureTime;
           timeOnFarm = calculateTimeOnFarm(arrivalTime, departureTime);
+          enteredBy = getCallerNameOrPrincipal(caller);
         };
         workerDailyRecords.add(workerId, dailyRecord);
       };

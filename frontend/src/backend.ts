@@ -96,6 +96,7 @@ export interface ExpenseRecord {
     description: string;
     category: ExpenseType;
     amount: number;
+    enteredBy: string;
 }
 export interface Sale {
     id: bigint;
@@ -104,11 +105,13 @@ export interface Sale {
     quantity: bigint;
     customerId: bigint;
     unitPrice: number;
+    enteredBy: string;
 }
 export interface Customer {
     id: bigint;
     customerType: string;
     name: string;
+    enteredBy: string;
     contactDetails: string;
 }
 export interface InventoryItem {
@@ -117,6 +120,7 @@ export interface InventoryItem {
     name: string;
     itemType: ItemType;
     quantity: bigint;
+    enteredBy: string;
 }
 export interface UserApprovalInfo {
     status: ApprovalStatus;
@@ -128,11 +132,13 @@ export interface IncomeRecord {
     date: Time;
     description: string;
     amount: number;
+    enteredBy: string;
 }
 export interface Worker {
     id: bigint;
     name: string;
     role: string;
+    enteredBy: string;
 }
 export interface UserProfile {
     name: string;
@@ -144,6 +150,7 @@ export interface WorkerDailyRecord {
     departureTime?: Time;
     date: Time;
     timeOnFarm?: bigint;
+    enteredBy: string;
 }
 export enum ApprovalStatus {
     pending = "pending",
@@ -183,6 +190,7 @@ export interface backendInterface {
     addInventoryItem(name: string, itemType: ItemType, quantity: bigint, costPerUnit: number): Promise<bigint>;
     addSale(customerId: bigint, inventoryItemId: bigint, quantity: bigint, unitPrice: number): Promise<bigint>;
     addWorker(name: string, role: string): Promise<bigint>;
+    approveUser(user: Principal): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     bootstrapAdminRegistration(): Promise<void>;
     deleteExpense(id: bigint): Promise<void>;
@@ -202,7 +210,9 @@ export interface backendInterface {
     isCallerAdmin(): Promise<boolean>;
     isCallerApproved(): Promise<boolean>;
     listApprovals(): Promise<Array<UserApprovalInfo>>;
+    listPendingUsers(): Promise<Array<UserProfile>>;
     recordWorkerDay(workerId: bigint, date: Time, present: boolean, arrivalTime: Time | null, departureTime: Time | null): Promise<void>;
+    rejectUser(user: Principal): Promise<void>;
     requestApproval(): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setApproval(user: Principal, status: ApprovalStatus): Promise<void>;
@@ -307,6 +317,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.addWorker(arg0, arg1);
+            return result;
+        }
+    }
+    async approveUser(arg0: Principal): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.approveUser(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.approveUser(arg0);
             return result;
         }
     }
@@ -576,6 +600,20 @@ export class Backend implements backendInterface {
             return from_candid_vec_n32(this._uploadFile, this._downloadFile, result);
         }
     }
+    async listPendingUsers(): Promise<Array<UserProfile>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.listPendingUsers();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.listPendingUsers();
+            return result;
+        }
+    }
     async recordWorkerDay(arg0: bigint, arg1: Time, arg2: boolean, arg3: Time | null, arg4: Time | null): Promise<void> {
         if (this.processError) {
             try {
@@ -587,6 +625,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.recordWorkerDay(arg0, arg1, arg2, to_candid_opt_n37(this._uploadFile, this._downloadFile, arg3), to_candid_opt_n37(this._uploadFile, this._downloadFile, arg4));
+            return result;
+        }
+    }
+    async rejectUser(arg0: Principal): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.rejectUser(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.rejectUser(arg0);
             return result;
         }
     }
@@ -706,19 +758,22 @@ function from_candid_record_n14(_uploadFile: (file: ExternalBlob) => Promise<Uin
     description: string;
     category: _ExpenseType;
     amount: number;
+    enteredBy: string;
 }): {
     id: bigint;
     date: Time;
     description: string;
     category: ExpenseType;
     amount: number;
+    enteredBy: string;
 } {
     return {
         id: value.id,
         date: value.date,
         description: value.description,
         category: from_candid_ExpenseType_n15(_uploadFile, _downloadFile, value.category),
-        amount: value.amount
+        amount: value.amount,
+        enteredBy: value.enteredBy
     };
 }
 function from_candid_record_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
@@ -727,19 +782,22 @@ function from_candid_record_n19(_uploadFile: (file: ExternalBlob) => Promise<Uin
     date: _Time;
     description: string;
     amount: number;
+    enteredBy: string;
 }): {
     id: bigint;
     source: IncomeSource;
     date: Time;
     description: string;
     amount: number;
+    enteredBy: string;
 } {
     return {
         id: value.id,
         source: from_candid_IncomeSource_n20(_uploadFile, _downloadFile, value.source),
         date: value.date,
         description: value.description,
-        amount: value.amount
+        amount: value.amount,
+        enteredBy: value.enteredBy
     };
 }
 function from_candid_record_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
@@ -748,19 +806,22 @@ function from_candid_record_n24(_uploadFile: (file: ExternalBlob) => Promise<Uin
     name: string;
     itemType: _ItemType;
     quantity: bigint;
+    enteredBy: string;
 }): {
     id: bigint;
     costPerUnit: number;
     name: string;
     itemType: ItemType;
     quantity: bigint;
+    enteredBy: string;
 } {
     return {
         id: value.id,
         costPerUnit: value.costPerUnit,
         name: value.name,
         itemType: from_candid_ItemType_n25(_uploadFile, _downloadFile, value.itemType),
-        quantity: value.quantity
+        quantity: value.quantity,
+        enteredBy: value.enteredBy
     };
 }
 function from_candid_record_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
@@ -770,6 +831,7 @@ function from_candid_record_n29(_uploadFile: (file: ExternalBlob) => Promise<Uin
     departureTime: [] | [_Time];
     date: _Time;
     timeOnFarm: [] | [bigint];
+    enteredBy: string;
 }): {
     workerId: bigint;
     arrivalTime?: Time;
@@ -777,6 +839,7 @@ function from_candid_record_n29(_uploadFile: (file: ExternalBlob) => Promise<Uin
     departureTime?: Time;
     date: Time;
     timeOnFarm?: bigint;
+    enteredBy: string;
 } {
     return {
         workerId: value.workerId,
@@ -784,7 +847,8 @@ function from_candid_record_n29(_uploadFile: (file: ExternalBlob) => Promise<Uin
         present: value.present,
         departureTime: record_opt_to_undefined(from_candid_opt_n30(_uploadFile, _downloadFile, value.departureTime)),
         date: value.date,
-        timeOnFarm: record_opt_to_undefined(from_candid_opt_n31(_uploadFile, _downloadFile, value.timeOnFarm))
+        timeOnFarm: record_opt_to_undefined(from_candid_opt_n31(_uploadFile, _downloadFile, value.timeOnFarm)),
+        enteredBy: value.enteredBy
     };
 }
 function from_candid_record_n34(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {

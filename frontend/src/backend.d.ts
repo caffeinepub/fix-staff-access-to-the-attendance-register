@@ -14,6 +14,7 @@ export interface ExpenseRecord {
     description: string;
     category: ExpenseType;
     amount: number;
+    enteredBy: string;
 }
 export interface Sale {
     id: bigint;
@@ -22,11 +23,13 @@ export interface Sale {
     quantity: bigint;
     customerId: bigint;
     unitPrice: number;
+    enteredBy: string;
 }
 export interface Customer {
     id: bigint;
     customerType: string;
     name: string;
+    enteredBy: string;
     contactDetails: string;
 }
 export interface InventoryItem {
@@ -35,6 +38,7 @@ export interface InventoryItem {
     name: string;
     itemType: ItemType;
     quantity: bigint;
+    enteredBy: string;
 }
 export interface UserApprovalInfo {
     status: ApprovalStatus;
@@ -46,11 +50,13 @@ export interface IncomeRecord {
     date: Time;
     description: string;
     amount: number;
+    enteredBy: string;
 }
 export interface Worker {
     id: bigint;
     name: string;
     role: string;
+    enteredBy: string;
 }
 export interface UserProfile {
     name: string;
@@ -62,6 +68,7 @@ export interface WorkerDailyRecord {
     departureTime?: Time;
     date: Time;
     timeOnFarm?: bigint;
+    enteredBy: string;
 }
 export enum ApprovalStatus {
     pending = "pending",
@@ -100,6 +107,7 @@ export interface backendInterface {
     addInventoryItem(name: string, itemType: ItemType, quantity: bigint, costPerUnit: number): Promise<bigint>;
     addSale(customerId: bigint, inventoryItemId: bigint, quantity: bigint, unitPrice: number): Promise<bigint>;
     addWorker(name: string, role: string): Promise<bigint>;
+    approveUser(user: Principal): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     bootstrapAdminRegistration(): Promise<void>;
     deleteExpense(id: bigint): Promise<void>;
@@ -119,7 +127,9 @@ export interface backendInterface {
     isCallerAdmin(): Promise<boolean>;
     isCallerApproved(): Promise<boolean>;
     listApprovals(): Promise<Array<UserApprovalInfo>>;
+    listPendingUsers(): Promise<Array<UserProfile>>;
     recordWorkerDay(workerId: bigint, date: Time, present: boolean, arrivalTime: Time | null, departureTime: Time | null): Promise<void>;
+    rejectUser(user: Principal): Promise<void>;
     requestApproval(): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setApproval(user: Principal, status: ApprovalStatus): Promise<void>;

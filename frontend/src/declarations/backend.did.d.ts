@@ -17,6 +17,7 @@ export interface Customer {
   'id' : bigint,
   'customerType' : string,
   'name' : string,
+  'enteredBy' : string,
   'contactDetails' : string,
 }
 export interface ExpenseRecord {
@@ -25,6 +26,7 @@ export interface ExpenseRecord {
   'description' : string,
   'category' : ExpenseType,
   'amount' : number,
+  'enteredBy' : string,
 }
 export type ExpenseType = { 'fertilizers' : null } |
   { 'transportation' : null } |
@@ -38,6 +40,7 @@ export interface IncomeRecord {
   'date' : Time,
   'description' : string,
   'amount' : number,
+  'enteredBy' : string,
 }
 export type IncomeSource = { 'other' : null } |
   { 'local' : null } |
@@ -49,6 +52,7 @@ export interface InventoryItem {
   'name' : string,
   'itemType' : ItemType,
   'quantity' : bigint,
+  'enteredBy' : string,
 }
 export type ItemType = { 'equipment' : null } |
   { 'peppers' : null } |
@@ -61,6 +65,7 @@ export interface Sale {
   'quantity' : bigint,
   'customerId' : bigint,
   'unitPrice' : number,
+  'enteredBy' : string,
 }
 export type Time = bigint;
 export interface UserApprovalInfo {
@@ -71,7 +76,12 @@ export interface UserProfile { 'name' : string }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
-export interface Worker { 'id' : bigint, 'name' : string, 'role' : string }
+export interface Worker {
+  'id' : bigint,
+  'name' : string,
+  'role' : string,
+  'enteredBy' : string,
+}
 export interface WorkerDailyRecord {
   'workerId' : bigint,
   'arrivalTime' : [] | [Time],
@@ -79,6 +89,7 @@ export interface WorkerDailyRecord {
   'departureTime' : [] | [Time],
   'date' : Time,
   'timeOnFarm' : [] | [bigint],
+  'enteredBy' : string,
 }
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
@@ -88,6 +99,7 @@ export interface _SERVICE {
   'addInventoryItem' : ActorMethod<[string, ItemType, bigint, number], bigint>,
   'addSale' : ActorMethod<[bigint, bigint, bigint, number], bigint>,
   'addWorker' : ActorMethod<[string, string], bigint>,
+  'approveUser' : ActorMethod<[Principal], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'bootstrapAdminRegistration' : ActorMethod<[], undefined>,
   'deleteExpense' : ActorMethod<[bigint], undefined>,
@@ -110,10 +122,12 @@ export interface _SERVICE {
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isCallerApproved' : ActorMethod<[], boolean>,
   'listApprovals' : ActorMethod<[], Array<UserApprovalInfo>>,
+  'listPendingUsers' : ActorMethod<[], Array<UserProfile>>,
   'recordWorkerDay' : ActorMethod<
     [bigint, Time, boolean, [] | [Time], [] | [Time]],
     undefined
   >,
+  'rejectUser' : ActorMethod<[Principal], undefined>,
   'requestApproval' : ActorMethod<[], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'setApproval' : ActorMethod<[Principal, ApprovalStatus], undefined>,

@@ -1,60 +1,73 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add new user verification process with existing users as admins",
+  "title": "Complete admin approval logic and add 'Entered By' column to all entry tables",
   "requirements": [
     {
-      "id": "REQ-3",
-      "summary": "Block access to dashboard for pending/rejected users and show appropriate waiting/rejection screens",
+      "id": "REQ-2",
+      "summary": "Update VerificationTab to fetch and display pending users with approval actions",
       "acceptanceCriteria": [
-        "After profile setup, a pending user sees a 'Waiting for Approval' screen instead of the dashboard",
-        "The waiting screen displays a clear message that an existing farm member must approve their account",
-        "A rejected user sees a rejection notice explaining they were not approved",
-        "Verified users continue to see the full dashboard as before"
+        "VerificationTab fetches and displays all users with pending approval status",
+        "Each row shows the user's name, identifier, and status",
+        "Approve and Reject buttons trigger the correct backend calls and refresh the list on success"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/WaitingForApprovalScreen.tsx",
-          "operation": "create",
-          "description": "Create a component that displays a waiting message for users with 'pending' approval status. Use the user-approval component to check approval status via isCallerApproved backend function. Display a clear message explaining that an existing farm member must approve their account before they can access the dashboard. Include a 'Request Approval' button that calls the requestApproval backend function if the user hasn't already requested approval. Verify the component's usage instructions from the user-approval component before implementing."
-        },
-        {
-          "path": "frontend/src/components/RejectedScreen.tsx",
-          "operation": "create",
-          "description": "Create a component that displays a rejection notice for users with 'rejected' approval status. Show a clear message explaining that their account was not approved. Use the user-approval component to determine rejection status via isCallerApproved backend function. Verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/components/tabs/VerificationTab.tsx",
           "operation": "modify",
-          "description": "Add approval status checking after profile setup is complete. Use the user-approval component's isCallerApproved function to determine if the user is approved, pending, or rejected. If the user has a profile but is not approved, render WaitingForApprovalScreen. If rejected, render RejectedScreen. Only render the Dashboard for approved users or admins. Ensure the check happens after authentication and profile setup but before dashboard access. Verify the component's usage instructions before implementing."
+          "description": "Update the component to call the backend's listApprovals query (which returns UserApprovalInfo[] with principal and status fields). Filter the results to show only users with status 'pending'. For each pending user, fetch their profile using getUserProfile to display their name alongside their principal. Update the table columns to show Name, Principal, and Status. Ensure the Approve/Reject buttons call setApproval with the appropriate ApprovalStatus enum value and refresh the query on success. Handle cases where a user profile may not exist by displaying 'Unknown' as a fallback."
         },
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Add React Query hooks for user approval operations: useIsCallerApproved (query hook for checking approval status), useRequestApproval (mutation hook for requesting approval), useListApprovals (admin-only query hook for fetching all pending users), and approval action mutations (useApproveUser, useRejectUser) that call setApproval backend function with appropriate status. Follow the existing hook patterns in this file. Verify the user-approval component's usage instructions before implementing."
+          "description": "Add a new mutation hook useSetApproval that wraps the backend's setApproval(user: Principal, status: ApprovalStatus) method. Configure it to invalidate the 'approvals' query key on success to automatically refresh the verification list. Ensure proper error handling and loading states are exposed."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Add User Verification admin panel for verified users to approve/reject pending users",
+      "summary": "Add 'Entered By' column to all entry tables displaying the user who created each record",
       "acceptanceCriteria": [
-        "A new 'Verification' tab or section appears in the dashboard only for verified users",
-        "The panel lists all pending users showing their display name and registration timestamp",
-        "Each pending user entry has an 'Approve' and a 'Reject' button",
-        "Approving or rejecting a user updates their status immediately and refreshes the list",
-        "The panel shows an empty state message when there are no pending users"
+        "Each of the listed tabs has an 'Entered By' column in its table",
+        "The column displays the name or principal of the user who created the record",
+        "Records without an 'enteredBy' value display 'Unknown' or a suitable fallback",
+        "The column is responsive and does not break the existing table layout"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/tabs/VerificationTab.tsx",
-          "operation": "create",
-          "description": "Create an admin-only tab component for user verification management. Use the user-approval component's listApprovals backend function to fetch all users with their approval status. Display pending users in a table showing their principal (since UserApprovalInfo doesn't include name), approval status, and action buttons. Provide 'Approve' and 'Reject' buttons for each pending user that call setApproval with the appropriate ApprovalStatus. Show an empty state message when there are no pending users. Include proper error handling and loading states. Use the authorization component's isCallerAdmin or getCallerUserRole to verify admin access. Verify both component usage instructions before implementing."
+          "path": "frontend/src/components/tabs/IncomeTab.tsx",
+          "operation": "modify",
+          "description": "Add an 'Entered By' column to the income records table. The backend now includes an 'enteredBy' field (string) in each IncomeRecord. Display this field in a new table column. If the field is empty or undefined, display 'Unknown'. Ensure the column is responsive and fits within the existing table layout without breaking on smaller screens."
         },
         {
-          "path": "frontend/src/pages/Dashboard.tsx",
+          "path": "frontend/src/components/tabs/ExpenseTab.tsx",
           "operation": "modify",
-          "description": "Add a new 'Verification' tab to the dashboard navigation that renders VerificationTab component. Use the authorization component to conditionally show this tab only to admin users by checking isCallerAdmin or getCallerUserRole. Position the tab appropriately in the existing tab list alongside Summary, Income, Expenses, etc. Ensure the tab is properly wired into the existing tabs state management. Verify the authorization component's usage instructions before implementing."
+          "description": "Add an 'Entered By' column to the expense records table. The backend now includes an 'enteredBy' field (string) in each ExpenseRecord. Display this field in a new table column. If the field is empty or undefined, display 'Unknown'. Ensure the column is responsive and fits within the existing table layout without breaking on smaller screens."
+        },
+        {
+          "path": "frontend/src/components/tabs/InventoryTab.tsx",
+          "operation": "modify",
+          "description": "Add an 'Entered By' column to the inventory items table. The backend now includes an 'enteredBy' field (string) in each InventoryItem. Display this field in a new table column. If the field is empty or undefined, display 'Unknown'. Ensure the column is responsive and fits within the existing table layout without breaking on smaller screens."
+        },
+        {
+          "path": "frontend/src/components/tabs/SalesTab.tsx",
+          "operation": "modify",
+          "description": "Add an 'Entered By' column to the sales records table. The backend now includes an 'enteredBy' field (string) in each Sale. Display this field in a new table column. If the field is empty or undefined, display 'Unknown'. Ensure the column is responsive and fits within the existing table layout without breaking on smaller screens."
+        },
+        {
+          "path": "frontend/src/components/tabs/AttendanceTab.tsx",
+          "operation": "modify",
+          "description": "Add an 'Entered By' column to the workers table. The backend now includes an 'enteredBy' field (string) in each Worker. Display this field in a new table column. If the field is empty or undefined, display 'Unknown'. Ensure the column is responsive and fits within the existing table layout without breaking on smaller screens."
+        },
+        {
+          "path": "frontend/src/components/tabs/CustomersTab.tsx",
+          "operation": "modify",
+          "description": "Add an 'Entered By' column to the customers table. The backend now includes an 'enteredBy' field (string) in each Customer. Display this field in a new table column. If the field is empty or undefined, display 'Unknown'. Ensure the column is responsive and fits within the existing table layout without breaking on smaller screens."
+        },
+        {
+          "path": "frontend/src/components/tabs/FarmTimeTab.tsx",
+          "operation": "modify",
+          "description": "Add an 'Entered By' column to the worker daily records display (if a table view exists) or in the calendar day detail view. The backend now includes an 'enteredBy' field (string) in each WorkerDailyRecord. Display this field where daily records are shown. If the field is empty or undefined, display 'Unknown'. Ensure the display is consistent with the existing UI pattern and does not break the calendar layout."
         }
       ]
     }

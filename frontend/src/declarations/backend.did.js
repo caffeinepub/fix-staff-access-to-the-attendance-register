@@ -42,11 +42,13 @@ export const Sale = IDL.Record({
   'quantity' : IDL.Nat,
   'customerId' : IDL.Nat,
   'unitPrice' : IDL.Float64,
+  'enteredBy' : IDL.Text,
 });
 export const Customer = IDL.Record({
   'id' : IDL.Nat,
   'customerType' : IDL.Text,
   'name' : IDL.Text,
+  'enteredBy' : IDL.Text,
   'contactDetails' : IDL.Text,
 });
 export const ExpenseRecord = IDL.Record({
@@ -55,6 +57,7 @@ export const ExpenseRecord = IDL.Record({
   'description' : IDL.Text,
   'category' : ExpenseType,
   'amount' : IDL.Float64,
+  'enteredBy' : IDL.Text,
 });
 export const IncomeRecord = IDL.Record({
   'id' : IDL.Nat,
@@ -62,6 +65,7 @@ export const IncomeRecord = IDL.Record({
   'date' : Time,
   'description' : IDL.Text,
   'amount' : IDL.Float64,
+  'enteredBy' : IDL.Text,
 });
 export const InventoryItem = IDL.Record({
   'id' : IDL.Nat,
@@ -69,6 +73,7 @@ export const InventoryItem = IDL.Record({
   'name' : IDL.Text,
   'itemType' : ItemType,
   'quantity' : IDL.Nat,
+  'enteredBy' : IDL.Text,
 });
 export const WorkerDailyRecord = IDL.Record({
   'workerId' : IDL.Nat,
@@ -77,11 +82,13 @@ export const WorkerDailyRecord = IDL.Record({
   'departureTime' : IDL.Opt(Time),
   'date' : Time,
   'timeOnFarm' : IDL.Opt(IDL.Int),
+  'enteredBy' : IDL.Text,
 });
 export const Worker = IDL.Record({
   'id' : IDL.Nat,
   'name' : IDL.Text,
   'role' : IDL.Text,
+  'enteredBy' : IDL.Text,
 });
 export const ApprovalStatus = IDL.Variant({
   'pending' : IDL.Null,
@@ -113,6 +120,7 @@ export const idlService = IDL.Service({
     ),
   'addSale' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Nat, IDL.Float64], [IDL.Nat], []),
   'addWorker' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
+  'approveUser' : IDL.Func([IDL.Principal], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'bootstrapAdminRegistration' : IDL.Func([], [], []),
   'deleteExpense' : IDL.Func([IDL.Nat], [], []),
@@ -148,11 +156,13 @@ export const idlService = IDL.Service({
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isCallerApproved' : IDL.Func([], [IDL.Bool], ['query']),
   'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
+  'listPendingUsers' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
   'recordWorkerDay' : IDL.Func(
       [IDL.Nat, Time, IDL.Bool, IDL.Opt(Time), IDL.Opt(Time)],
       [],
       [],
     ),
+  'rejectUser' : IDL.Func([IDL.Principal], [], []),
   'requestApproval' : IDL.Func([], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
@@ -205,11 +215,13 @@ export const idlFactory = ({ IDL }) => {
     'quantity' : IDL.Nat,
     'customerId' : IDL.Nat,
     'unitPrice' : IDL.Float64,
+    'enteredBy' : IDL.Text,
   });
   const Customer = IDL.Record({
     'id' : IDL.Nat,
     'customerType' : IDL.Text,
     'name' : IDL.Text,
+    'enteredBy' : IDL.Text,
     'contactDetails' : IDL.Text,
   });
   const ExpenseRecord = IDL.Record({
@@ -218,6 +230,7 @@ export const idlFactory = ({ IDL }) => {
     'description' : IDL.Text,
     'category' : ExpenseType,
     'amount' : IDL.Float64,
+    'enteredBy' : IDL.Text,
   });
   const IncomeRecord = IDL.Record({
     'id' : IDL.Nat,
@@ -225,6 +238,7 @@ export const idlFactory = ({ IDL }) => {
     'date' : Time,
     'description' : IDL.Text,
     'amount' : IDL.Float64,
+    'enteredBy' : IDL.Text,
   });
   const InventoryItem = IDL.Record({
     'id' : IDL.Nat,
@@ -232,6 +246,7 @@ export const idlFactory = ({ IDL }) => {
     'name' : IDL.Text,
     'itemType' : ItemType,
     'quantity' : IDL.Nat,
+    'enteredBy' : IDL.Text,
   });
   const WorkerDailyRecord = IDL.Record({
     'workerId' : IDL.Nat,
@@ -240,11 +255,13 @@ export const idlFactory = ({ IDL }) => {
     'departureTime' : IDL.Opt(Time),
     'date' : Time,
     'timeOnFarm' : IDL.Opt(IDL.Int),
+    'enteredBy' : IDL.Text,
   });
   const Worker = IDL.Record({
     'id' : IDL.Nat,
     'name' : IDL.Text,
     'role' : IDL.Text,
+    'enteredBy' : IDL.Text,
   });
   const ApprovalStatus = IDL.Variant({
     'pending' : IDL.Null,
@@ -280,6 +297,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'addWorker' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
+    'approveUser' : IDL.Func([IDL.Principal], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'bootstrapAdminRegistration' : IDL.Func([], [], []),
     'deleteExpense' : IDL.Func([IDL.Nat], [], []),
@@ -315,11 +333,13 @@ export const idlFactory = ({ IDL }) => {
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isCallerApproved' : IDL.Func([], [IDL.Bool], ['query']),
     'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
+    'listPendingUsers' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
     'recordWorkerDay' : IDL.Func(
         [IDL.Nat, Time, IDL.Bool, IDL.Opt(Time), IDL.Opt(Time)],
         [],
         [],
       ),
+    'rejectUser' : IDL.Func([IDL.Principal], [], []),
     'requestApproval' : IDL.Func([], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
