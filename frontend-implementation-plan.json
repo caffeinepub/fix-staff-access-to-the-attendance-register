@@ -1,24 +1,21 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Collapse navigation buttons into a dropdown menu",
+  "title": "Revert Dashboard Navigation to Version 14",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Replace flat navigation buttons with a dropdown menu containing all eight tabs (Dashboard, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time), preserving the admin-only Verification tab visibility logic",
+      "summary": "Revert the Dashboard navigation from the dropdown menu (introduced in version 15) back to the flat navigation button row that existed in version 14",
       "acceptanceCriteria": [
-        "A single dropdown trigger button is visible in place of the individual navigation buttons.",
-        "Opening the dropdown reveals all eight items: Dashboard, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time.",
-        "Clicking any dropdown item switches the active tab to the corresponding section.",
-        "The dropdown closes automatically after a selection is made.",
-        "The currently active section is visually highlighted in the dropdown list.",
-        "The dropdown is keyboard-accessible (open/close with Enter/Escape, navigate with arrow keys)."
+        "The Dashboard no longer uses a shadcn DropdownMenu for navigation.",
+        "All navigation sections (Summary, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time, Verification) are rendered as individual flat buttons in a row, matching the version 14 layout.",
+        "Navigation between tabs functions correctly after the revert."
       ],
       "file_operations": [
         {
           "path": "frontend/src/pages/Dashboard.tsx",
           "operation": "modify",
-          "description": "Replace the flat row of navigation buttons with a dropdown menu component. Import and use shadcn/ui DropdownMenu components (DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem) to create a single trigger button that opens a menu listing all eight navigation items (Dashboard, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time). Wire each DropdownMenuItem's onClick to call setActiveTab with the corresponding tab value. Apply visual highlighting to the currently active tab item within the dropdown (e.g., using a checkmark icon or background color). Ensure the Verification tab remains conditionally rendered for admins only and is not included in the dropdown. Preserve all existing tab content rendering logic and state management. The dropdown must close automatically after a selection is made and support keyboard navigation (Enter/Escape to open/close, arrow keys to navigate items)."
+          "description": "Remove the shadcn DropdownMenu component and replace it with a flat row of individual navigation buttons. Replace the dropdown trigger and menu items with a horizontal flex container displaying all navigation options (Summary, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time, Verification) as separate buttons. Each button should call setActiveTab with the corresponding tab value. Maintain the existing activeTab state logic and conditional rendering of tab content. Preserve the admin-only conditional rendering for the Verification tab button."
         }
       ]
     }

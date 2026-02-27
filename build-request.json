@@ -1,41 +1,34 @@
 {
   "kind": "build_request",
-  "title": "Collapse navigation buttons into a dropdown menu",
-  "projectName": "Pepper Farm Bookkeeping",
-  "priority": "normal",
+  "title": "Revert to version 14",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Replace the flat row of navigation buttons (Dashboard, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time) in the Dashboard with a single dropdown menu trigger. Clicking the trigger opens a dropdown listing all sections; selecting an item navigates to that tab and closes the dropdown.",
+      "text": "Revert the Dashboard navigation from the dropdown menu (introduced in version 15) back to the flat navigation button row that existed in version 14.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-4"
         ],
         "quotes": [
-          "Can you put these buttons in a dropdown menu. Dashboard\nIncome\nExpenses\nInventory\nCustomers\nSales\nAttendance\nFarm Time"
+          "Revert to version 14"
         ]
       },
       "acceptanceCriteria": [
-        "A single dropdown trigger button is visible in place of the individual navigation buttons.",
-        "Opening the dropdown reveals all eight items: Dashboard, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time.",
-        "Clicking any dropdown item switches the active tab to the corresponding section.",
-        "The dropdown closes automatically after a selection is made.",
-        "The currently active section is visually highlighted in the dropdown list.",
-        "The dropdown is keyboard-accessible (open/close with Enter/Escape, navigate with arrow keys)."
+        "The Dashboard no longer uses a shadcn DropdownMenu for navigation.",
+        "All navigation sections (Summary, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time, Verification) are rendered as individual flat buttons in a row, matching the version 14 layout.",
+        "Navigation between tabs functions correctly after the revert."
       ]
     }
   ],
   "constraints": [
-    "Do not modify files under frontend/src/hooks/ or frontend/src/components/ui.",
-    "Preserve all existing tab content components (SummaryTab, IncomeTab, ExpenseTab, InventoryTab, CustomersTab, SalesTab, AttendanceTab, FarmTimeTab, VerificationTab) — only the navigation trigger changes.",
-    "Admin-only Verification tab must remain hidden from non-admin users as before."
+    "Do not change any backend logic or data models.",
+    "Do not modify any files listed under frontend.immutablePaths."
   ],
   "nonGoals": [
-    "Changing any backend logic or data models.",
-    "Restructuring routing or adding new pages.",
-    "Modifying individual tab content components.",
-    "Adding new navigation items beyond those listed."
+    "Introducing any new features or UI changes beyond reverting the navigation to version 14.",
+    "Modifying backend/main.mo or any Motoko files."
   ],
   "imageRequirements": {
     "required": [],

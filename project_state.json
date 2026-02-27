@@ -1,30 +1,22 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "A farm management app with a navigation dropdown menu containing: Dashboard, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time sections.",
+  "summary": "New project",
   "architectural_notes": [],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-replace-the-flat-row-of-navigation-buttons-dashboard-income-expenses-inventory-customers-sales-attendance-farm-time-in-the-dashboard-with-a-single-dropdown-menu-trigger-clicking-the-trigger-opens-a-dropdown-listing-all-sections-selecting-an-item-navigates-to-that-tab-and-closes-the-dropdown",
-      "title": "Replace the flat row of navigation buttons (Dashboard, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time) in the Dashboard with a single dropdown menu trigger. Clicking the trigger opens a dropdown listing all sections; selecting an item navigates to that tab and closes the dropdown.",
+      "id": "feature-revert-the-dashboard-navigation-from-the-dropdown-menu-introduced-in-version-15-back-to-the-flat-navigation-button-row-that-existed-in-version-14",
+      "title": "Revert the Dashboard navigation from the dropdown menu (introduced in version 15) back to the flat navigation button row that existed in version 14.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     }
   ],
-  "new_feature_requests": [
-    {
-      "id": "AR-1",
-      "summary": "Put navigation buttons (Dashboard, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time) into a dropdown menu",
-      "reqIds": [],
-      "status": "pending"
-    }
-  ],
-  "gameProjectType": "none",
-  "projectName": "Pepper Farm Bookkeeping",
+  "new_feature_requests": [],
+  "projectName": "Revert to version 14",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

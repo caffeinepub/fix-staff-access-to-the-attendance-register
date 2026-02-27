@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-27T00:19:30.937Z",
+  "generatedAt": "2026-02-27T00:26:49.742Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -12,7 +12,7 @@
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Replace the flat row of navigation buttons (Dashboard, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time) in the Dashboard with a single dropdown menu trigger. Clicking the trigger opens a dropdown listing all sections; selecting an item navigates to that tab and closes the dropdown.",
+        "summary": "Revert the Dashboard navigation from the dropdown menu (introduced in version 15) back to the flat navigation button row that existed in version 14.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/pages/Dashboard.tsx"

@@ -2,8 +2,8 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-replace-the-flat-row-of-navigation-buttons-dashboard-income-expenses-inventory-customers-sales-attendance-farm-time-in-the-dashboard-with-a-single-dropdown-menu-trigger-clicking-the-trigger-opens-a-dropdown-listing-all-sections-selecting-an-item-navigates-to-that-tab-and-closes-the-dropdown",
-      "featureTitle": "Replace the flat row of navigation buttons (Dashboard, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time) in the Dashboard with a single dropdown menu trigger. Clicking the trigger opens a dropdown listing all sections; selecting an item navigates to that tab and closes the dropdown.",
+      "featureId": "feature-revert-the-dashboard-navigation-from-the-dropdown-menu-introduced-in-version-15-back-to-the-flat-navigation-button-row-that-existed-in-version-14",
+      "featureTitle": "Revert the Dashboard navigation from the dropdown menu (introduced in version 15) back to the flat navigation button row that existed in version 14.",
       "files": [
         "frontend/src/pages/Dashboard.tsx"
       ],
