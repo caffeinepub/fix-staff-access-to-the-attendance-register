@@ -10,20 +10,20 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
-export interface AttendanceRecord {
-  'id' : bigint,
-  'status' : { 'onLeave' : null } |
-    { 'present' : null } |
-    { 'late' : null } |
-    { 'absent' : null },
-  'workerId' : bigint,
-  'date' : Time,
-}
+export type ApprovalStatus = { 'pending' : null } |
+  { 'approved' : null } |
+  { 'rejected' : null };
 export interface Customer {
   'id' : bigint,
   'customerType' : string,
   'name' : string,
+  'enteredBy' : string,
   'contactDetails' : string,
+}
+export interface Department {
+  'leadName' : string,
+  'name' : string,
+  'description' : string,
 }
 export interface ExpenseRecord {
   'id' : bigint,
@@ -31,6 +31,7 @@ export interface ExpenseRecord {
   'description' : string,
   'category' : ExpenseType,
   'amount' : number,
+  'enteredBy' : string,
 }
 export type ExpenseType = { 'fertilizers' : null } |
   { 'transportation' : null } |
@@ -38,12 +39,26 @@ export type ExpenseType = { 'fertilizers' : null } |
   { 'equipment' : null } |
   { 'labor' : null } |
   { 'packaging' : null };
+export interface FileAttachment {
+  'id' : bigint,
+  'content' : Uint8Array,
+  'inventoryItemId' : bigint,
+  'mimeType' : string,
+  'filename' : string,
+}
+export interface FileAttachmentMetadata {
+  'id' : bigint,
+  'inventoryItemId' : bigint,
+  'mimeType' : string,
+  'filename' : string,
+}
 export interface IncomeRecord {
   'id' : bigint,
   'source' : IncomeSource,
   'date' : Time,
   'description' : string,
   'amount' : number,
+  'enteredBy' : string,
 }
 export type IncomeSource = { 'other' : null } |
   { 'local' : null } |
@@ -55,11 +70,25 @@ export interface InventoryItem {
   'name' : string,
   'itemType' : ItemType,
   'quantity' : bigint,
+  'enteredBy' : string,
 }
 export type ItemType = { 'equipment' : null } |
   { 'peppers' : null } |
   { 'fertilizer' : null } |
   { 'pesticide' : null };
+export interface MonthlyGoal {
+  'id' : bigint,
+  'month' : bigint,
+  'plotEntries' : Array<PlotEntry>,
+  'actualPlots' : bigint,
+  'year' : bigint,
+  'targetPlots' : bigint,
+}
+export interface PlotEntry {
+  'dateActivated' : Time,
+  'department' : string,
+  'plotName' : string,
+}
 export interface Sale {
   'id' : bigint,
   'inventoryItemId' : bigint,
@@ -67,51 +96,150 @@ export interface Sale {
   'quantity' : bigint,
   'customerId' : bigint,
   'unitPrice' : number,
+  'enteredBy' : string,
 }
 export type Time = bigint;
+export interface UserApprovalInfo {
+  'status' : ApprovalStatus,
+  'principal' : Principal,
+}
 export interface UserProfile { 'name' : string }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
-export interface Worker { 'id' : bigint, 'name' : string, 'role' : string }
+export interface WeeklyReport {
+  'departmentLead' : string,
+  'departmentName' : string,
+  'planForNextWeek' : string,
+  'achievements' : string,
+  'weekEnding' : Time,
+  'challenges' : string,
+}
+export interface Worker {
+  'id' : bigint,
+  'name' : string,
+  'role' : string,
+  'enteredBy' : string,
+}
+export interface WorkerDailyRecord {
+  'workerId' : bigint,
+  'arrivalTime' : [] | [Time],
+  'present' : boolean,
+  'departureTime' : [] | [Time],
+  'date' : Time,
+  'timeOnFarm' : [] | [bigint],
+  'enteredBy' : string,
+}
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'addCustomer' : ActorMethod<[string, string, string], bigint>,
   'addExpense' : ActorMethod<[number, Time, ExpenseType, string], bigint>,
   'addIncome' : ActorMethod<[number, Time, IncomeSource, string], bigint>,
   'addInventoryItem' : ActorMethod<[string, ItemType, bigint, number], bigint>,
+  'addMonthlyGoal' : ActorMethod<[bigint, bigint, bigint], bigint>,
+  'addPlotEntry' : ActorMethod<[bigint, string, Time, string], undefined>,
   'addSale' : ActorMethod<[bigint, bigint, bigint, number], bigint>,
   'addWorker' : ActorMethod<[string, string], bigint>,
+  'approveUser' : ActorMethod<[Principal], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'getAttendanceRecords' : ActorMethod<[], Array<AttendanceRecord>>,
+  'bootstrapAdminRegistration' : ActorMethod<[], undefined>,
+  /**
+   * / Delete a specific attachment by its ID.
+   * / Only admins (including auto-registered admins) may delete attachments.
+   */
+  'deleteAttachment' : ActorMethod<[bigint], undefined>,
+  'deleteExpense' : ActorMethod<[bigint], undefined>,
+  /**
+   * / Delete a specific file attachment by its ID.
+   * / Only admins (including auto-registered admins) may delete attachments.
+   */
+  'deleteFileAttachment' : ActorMethod<[bigint], undefined>,
+  /**
+   * / Retrieve the full content of a specific attachment by its ID.
+   * / Approved users and admins may retrieve attachment content.
+   */
+  'getAttachment' : ActorMethod<[bigint], [] | [FileAttachment]>,
+  /**
+   * / Retrieve metadata for all attachments belonging to a specific inventory item.
+   * / Approved users and admins may retrieve attachment metadata.
+   */
+  'getAttachmentsForItem' : ActorMethod<
+    [bigint],
+    Array<FileAttachmentMetadata>
+  >,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getCustomerPurchaseHistory' : ActorMethod<[bigint], Array<Sale>>,
   'getCustomers' : ActorMethod<[], Array<Customer>>,
+  'getDepartments' : ActorMethod<[], Array<Department>>,
   'getExpenseRecords' : ActorMethod<[], Array<ExpenseRecord>>,
+  /**
+   * / Retrieve the full content of a specific file attachment by its ID.
+   * / Approved users and admins may retrieve attachment content.
+   */
+  'getFileAttachment' : ActorMethod<[bigint], [] | [FileAttachment]>,
+  /**
+   * / Retrieve metadata for all file attachments.
+   * / Approved users and admins may retrieve attachment metadata.
+   */
+  'getFileAttachmentMetadata' : ActorMethod<[], Array<FileAttachmentMetadata>>,
   'getIncomeRecords' : ActorMethod<[], Array<IncomeRecord>>,
   'getInventoryItems' : ActorMethod<[], Array<InventoryItem>>,
+  'getMonthlyGoal' : ActorMethod<[bigint], [] | [MonthlyGoal]>,
+  'getMonthlyGoals' : ActorMethod<[], Array<MonthlyGoal>>,
   'getSales' : ActorMethod<[], Array<Sale>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
-  'getWorkerAttendance' : ActorMethod<[bigint], Array<AttendanceRecord>>,
-  'getWorkers' : ActorMethod<[], Array<Worker>>,
-  'isCallerAdmin' : ActorMethod<[], boolean>,
-  'markAttendance' : ActorMethod<
-    [
-      bigint,
-      Time,
-      { 'onLeave' : null } |
-        { 'present' : null } |
-        { 'late' : null } |
-        { 'absent' : null },
-    ],
-    bigint
+  'getWeeklyReports' : ActorMethod<[], Array<WeeklyReport>>,
+  'getWeeklyReportsByDateRange' : ActorMethod<
+    [Time, Time],
+    Array<WeeklyReport>
   >,
+  'getWeeklyReportsByDepartment' : ActorMethod<[string], Array<WeeklyReport>>,
+  'getWorkerDailyRecords' : ActorMethod<[], Array<WorkerDailyRecord>>,
+  'getWorkerDailyRecordsByWorker' : ActorMethod<
+    [bigint],
+    Array<WorkerDailyRecord>
+  >,
+  'getWorkers' : ActorMethod<[], Array<Worker>>,
+  'initializeFixedMonthlyGoals' : ActorMethod<[], undefined>,
+  'isAutoRegisteredAdmin' : ActorMethod<[Principal], boolean>,
+  'isCallerAdmin' : ActorMethod<[], boolean>,
+  'isCallerApproved' : ActorMethod<[], boolean>,
+  'listApprovals' : ActorMethod<[], Array<UserApprovalInfo>>,
+  'listPendingUsers' : ActorMethod<[], Array<UserProfile>>,
+  'recordWorkerDay' : ActorMethod<
+    [bigint, Time, boolean, [] | [Time], [] | [Time]],
+    undefined
+  >,
+  'rejectUser' : ActorMethod<[Principal], undefined>,
+  'requestApproval' : ActorMethod<[], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'setApproval' : ActorMethod<[Principal, ApprovalStatus], undefined>,
+  'submitWeeklyReport' : ActorMethod<
+    [string, string, Time, string, string, string],
+    undefined
+  >,
+  'updateExpense' : ActorMethod<
+    [bigint, number, Time, ExpenseType, string],
+    undefined
+  >,
   'updateInventoryItem' : ActorMethod<
     [bigint, string, ItemType, bigint, number],
     undefined
   >,
+  /**
+   * / Upload a file attachment to a specific inventory item.
+   * / Only admins (including auto-registered admins) may upload attachments.
+   */
+  'uploadAttachmentToItem' : ActorMethod<
+    [bigint, string, string, Uint8Array],
+    bigint
+  >,
+  /**
+   * / Upload a file attachment (not linked to a specific inventory item).
+   * / Only admins (including auto-registered admins) may upload attachments.
+   */
+  'uploadFileAttachment' : ActorMethod<[string, string, Uint8Array], bigint>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

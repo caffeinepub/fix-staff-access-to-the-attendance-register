@@ -34,16 +34,18 @@ export const UserRole = IDL.Variant({
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
-export const AttendanceRecord = IDL.Record({
+export const FileAttachment = IDL.Record({
   'id' : IDL.Nat,
-  'status' : IDL.Variant({
-    'onLeave' : IDL.Null,
-    'present' : IDL.Null,
-    'late' : IDL.Null,
-    'absent' : IDL.Null,
-  }),
-  'workerId' : IDL.Nat,
-  'date' : Time,
+  'content' : IDL.Vec(IDL.Nat8),
+  'inventoryItemId' : IDL.Nat,
+  'mimeType' : IDL.Text,
+  'filename' : IDL.Text,
+});
+export const FileAttachmentMetadata = IDL.Record({
+  'id' : IDL.Nat,
+  'inventoryItemId' : IDL.Nat,
+  'mimeType' : IDL.Text,
+  'filename' : IDL.Text,
 });
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
 export const Sale = IDL.Record({
@@ -53,12 +55,19 @@ export const Sale = IDL.Record({
   'quantity' : IDL.Nat,
   'customerId' : IDL.Nat,
   'unitPrice' : IDL.Float64,
+  'enteredBy' : IDL.Text,
 });
 export const Customer = IDL.Record({
   'id' : IDL.Nat,
   'customerType' : IDL.Text,
   'name' : IDL.Text,
+  'enteredBy' : IDL.Text,
   'contactDetails' : IDL.Text,
+});
+export const Department = IDL.Record({
+  'leadName' : IDL.Text,
+  'name' : IDL.Text,
+  'description' : IDL.Text,
 });
 export const ExpenseRecord = IDL.Record({
   'id' : IDL.Nat,
@@ -66,6 +75,7 @@ export const ExpenseRecord = IDL.Record({
   'description' : IDL.Text,
   'category' : ExpenseType,
   'amount' : IDL.Float64,
+  'enteredBy' : IDL.Text,
 });
 export const IncomeRecord = IDL.Record({
   'id' : IDL.Nat,
@@ -73,6 +83,7 @@ export const IncomeRecord = IDL.Record({
   'date' : Time,
   'description' : IDL.Text,
   'amount' : IDL.Float64,
+  'enteredBy' : IDL.Text,
 });
 export const InventoryItem = IDL.Record({
   'id' : IDL.Nat,
@@ -80,11 +91,52 @@ export const InventoryItem = IDL.Record({
   'name' : IDL.Text,
   'itemType' : ItemType,
   'quantity' : IDL.Nat,
+  'enteredBy' : IDL.Text,
+});
+export const PlotEntry = IDL.Record({
+  'dateActivated' : Time,
+  'department' : IDL.Text,
+  'plotName' : IDL.Text,
+});
+export const MonthlyGoal = IDL.Record({
+  'id' : IDL.Nat,
+  'month' : IDL.Nat,
+  'plotEntries' : IDL.Vec(PlotEntry),
+  'actualPlots' : IDL.Nat,
+  'year' : IDL.Nat,
+  'targetPlots' : IDL.Nat,
+});
+export const WeeklyReport = IDL.Record({
+  'departmentLead' : IDL.Text,
+  'departmentName' : IDL.Text,
+  'planForNextWeek' : IDL.Text,
+  'achievements' : IDL.Text,
+  'weekEnding' : Time,
+  'challenges' : IDL.Text,
+});
+export const WorkerDailyRecord = IDL.Record({
+  'workerId' : IDL.Nat,
+  'arrivalTime' : IDL.Opt(Time),
+  'present' : IDL.Bool,
+  'departureTime' : IDL.Opt(Time),
+  'date' : Time,
+  'timeOnFarm' : IDL.Opt(IDL.Int),
+  'enteredBy' : IDL.Text,
 });
 export const Worker = IDL.Record({
   'id' : IDL.Nat,
   'name' : IDL.Text,
   'role' : IDL.Text,
+  'enteredBy' : IDL.Text,
+});
+export const ApprovalStatus = IDL.Variant({
+  'pending' : IDL.Null,
+  'approved' : IDL.Null,
+  'rejected' : IDL.Null,
+});
+export const UserApprovalInfo = IDL.Record({
+  'status' : ApprovalStatus,
+  'principal' : IDL.Principal,
 });
 
 export const idlService = IDL.Service({
@@ -105,10 +157,22 @@ export const idlService = IDL.Service({
       [IDL.Nat],
       [],
     ),
+  'addMonthlyGoal' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Nat], [IDL.Nat], []),
+  'addPlotEntry' : IDL.Func([IDL.Nat, IDL.Text, Time, IDL.Text], [], []),
   'addSale' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Nat, IDL.Float64], [IDL.Nat], []),
   'addWorker' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
+  'approveUser' : IDL.Func([IDL.Principal], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-  'getAttendanceRecords' : IDL.Func([], [IDL.Vec(AttendanceRecord)], ['query']),
+  'bootstrapAdminRegistration' : IDL.Func([], [], []),
+  'deleteAttachment' : IDL.Func([IDL.Nat], [], []),
+  'deleteExpense' : IDL.Func([IDL.Nat], [], []),
+  'deleteFileAttachment' : IDL.Func([IDL.Nat], [], []),
+  'getAttachment' : IDL.Func([IDL.Nat], [IDL.Opt(FileAttachment)], ['query']),
+  'getAttachmentsForItem' : IDL.Func(
+      [IDL.Nat],
+      [IDL.Vec(FileAttachmentMetadata)],
+      ['query'],
+    ),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getCustomerPurchaseHistory' : IDL.Func(
@@ -117,40 +181,88 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'getCustomers' : IDL.Func([], [IDL.Vec(Customer)], ['query']),
+  'getDepartments' : IDL.Func([], [IDL.Vec(Department)], ['query']),
   'getExpenseRecords' : IDL.Func([], [IDL.Vec(ExpenseRecord)], ['query']),
+  'getFileAttachment' : IDL.Func(
+      [IDL.Nat],
+      [IDL.Opt(FileAttachment)],
+      ['query'],
+    ),
+  'getFileAttachmentMetadata' : IDL.Func(
+      [],
+      [IDL.Vec(FileAttachmentMetadata)],
+      ['query'],
+    ),
   'getIncomeRecords' : IDL.Func([], [IDL.Vec(IncomeRecord)], ['query']),
   'getInventoryItems' : IDL.Func([], [IDL.Vec(InventoryItem)], ['query']),
+  'getMonthlyGoal' : IDL.Func([IDL.Nat], [IDL.Opt(MonthlyGoal)], ['query']),
+  'getMonthlyGoals' : IDL.Func([], [IDL.Vec(MonthlyGoal)], ['query']),
   'getSales' : IDL.Func([], [IDL.Vec(Sale)], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
-  'getWorkerAttendance' : IDL.Func(
+  'getWeeklyReports' : IDL.Func([], [IDL.Vec(WeeklyReport)], ['query']),
+  'getWeeklyReportsByDateRange' : IDL.Func(
+      [Time, Time],
+      [IDL.Vec(WeeklyReport)],
+      ['query'],
+    ),
+  'getWeeklyReportsByDepartment' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(WeeklyReport)],
+      ['query'],
+    ),
+  'getWorkerDailyRecords' : IDL.Func(
+      [],
+      [IDL.Vec(WorkerDailyRecord)],
+      ['query'],
+    ),
+  'getWorkerDailyRecordsByWorker' : IDL.Func(
       [IDL.Nat],
-      [IDL.Vec(AttendanceRecord)],
+      [IDL.Vec(WorkerDailyRecord)],
       ['query'],
     ),
   'getWorkers' : IDL.Func([], [IDL.Vec(Worker)], ['query']),
+  'initializeFixedMonthlyGoals' : IDL.Func([], [], []),
+  'isAutoRegisteredAdmin' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-  'markAttendance' : IDL.Func(
-      [
-        IDL.Nat,
-        Time,
-        IDL.Variant({
-          'onLeave' : IDL.Null,
-          'present' : IDL.Null,
-          'late' : IDL.Null,
-          'absent' : IDL.Null,
-        }),
-      ],
-      [IDL.Nat],
+  'isCallerApproved' : IDL.Func([], [IDL.Bool], ['query']),
+  'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
+  'listPendingUsers' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
+  'recordWorkerDay' : IDL.Func(
+      [IDL.Nat, Time, IDL.Bool, IDL.Opt(Time), IDL.Opt(Time)],
+      [],
       [],
     ),
+  'rejectUser' : IDL.Func([IDL.Principal], [], []),
+  'requestApproval' : IDL.Func([], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
+  'submitWeeklyReport' : IDL.Func(
+      [IDL.Text, IDL.Text, Time, IDL.Text, IDL.Text, IDL.Text],
+      [],
+      [],
+    ),
+  'updateExpense' : IDL.Func(
+      [IDL.Nat, IDL.Float64, Time, ExpenseType, IDL.Text],
+      [],
+      [],
+    ),
   'updateInventoryItem' : IDL.Func(
       [IDL.Nat, IDL.Text, ItemType, IDL.Nat, IDL.Float64],
       [],
+      [],
+    ),
+  'uploadAttachmentToItem' : IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Text, IDL.Vec(IDL.Nat8)],
+      [IDL.Nat],
+      [],
+    ),
+  'uploadFileAttachment' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Vec(IDL.Nat8)],
+      [IDL.Nat],
       [],
     ),
 });
@@ -184,16 +296,18 @@ export const idlFactory = ({ IDL }) => {
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
-  const AttendanceRecord = IDL.Record({
+  const FileAttachment = IDL.Record({
     'id' : IDL.Nat,
-    'status' : IDL.Variant({
-      'onLeave' : IDL.Null,
-      'present' : IDL.Null,
-      'late' : IDL.Null,
-      'absent' : IDL.Null,
-    }),
-    'workerId' : IDL.Nat,
-    'date' : Time,
+    'content' : IDL.Vec(IDL.Nat8),
+    'inventoryItemId' : IDL.Nat,
+    'mimeType' : IDL.Text,
+    'filename' : IDL.Text,
+  });
+  const FileAttachmentMetadata = IDL.Record({
+    'id' : IDL.Nat,
+    'inventoryItemId' : IDL.Nat,
+    'mimeType' : IDL.Text,
+    'filename' : IDL.Text,
   });
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
   const Sale = IDL.Record({
@@ -203,12 +317,19 @@ export const idlFactory = ({ IDL }) => {
     'quantity' : IDL.Nat,
     'customerId' : IDL.Nat,
     'unitPrice' : IDL.Float64,
+    'enteredBy' : IDL.Text,
   });
   const Customer = IDL.Record({
     'id' : IDL.Nat,
     'customerType' : IDL.Text,
     'name' : IDL.Text,
+    'enteredBy' : IDL.Text,
     'contactDetails' : IDL.Text,
+  });
+  const Department = IDL.Record({
+    'leadName' : IDL.Text,
+    'name' : IDL.Text,
+    'description' : IDL.Text,
   });
   const ExpenseRecord = IDL.Record({
     'id' : IDL.Nat,
@@ -216,6 +337,7 @@ export const idlFactory = ({ IDL }) => {
     'description' : IDL.Text,
     'category' : ExpenseType,
     'amount' : IDL.Float64,
+    'enteredBy' : IDL.Text,
   });
   const IncomeRecord = IDL.Record({
     'id' : IDL.Nat,
@@ -223,6 +345,7 @@ export const idlFactory = ({ IDL }) => {
     'date' : Time,
     'description' : IDL.Text,
     'amount' : IDL.Float64,
+    'enteredBy' : IDL.Text,
   });
   const InventoryItem = IDL.Record({
     'id' : IDL.Nat,
@@ -230,11 +353,52 @@ export const idlFactory = ({ IDL }) => {
     'name' : IDL.Text,
     'itemType' : ItemType,
     'quantity' : IDL.Nat,
+    'enteredBy' : IDL.Text,
+  });
+  const PlotEntry = IDL.Record({
+    'dateActivated' : Time,
+    'department' : IDL.Text,
+    'plotName' : IDL.Text,
+  });
+  const MonthlyGoal = IDL.Record({
+    'id' : IDL.Nat,
+    'month' : IDL.Nat,
+    'plotEntries' : IDL.Vec(PlotEntry),
+    'actualPlots' : IDL.Nat,
+    'year' : IDL.Nat,
+    'targetPlots' : IDL.Nat,
+  });
+  const WeeklyReport = IDL.Record({
+    'departmentLead' : IDL.Text,
+    'departmentName' : IDL.Text,
+    'planForNextWeek' : IDL.Text,
+    'achievements' : IDL.Text,
+    'weekEnding' : Time,
+    'challenges' : IDL.Text,
+  });
+  const WorkerDailyRecord = IDL.Record({
+    'workerId' : IDL.Nat,
+    'arrivalTime' : IDL.Opt(Time),
+    'present' : IDL.Bool,
+    'departureTime' : IDL.Opt(Time),
+    'date' : Time,
+    'timeOnFarm' : IDL.Opt(IDL.Int),
+    'enteredBy' : IDL.Text,
   });
   const Worker = IDL.Record({
     'id' : IDL.Nat,
     'name' : IDL.Text,
     'role' : IDL.Text,
+    'enteredBy' : IDL.Text,
+  });
+  const ApprovalStatus = IDL.Variant({
+    'pending' : IDL.Null,
+    'approved' : IDL.Null,
+    'rejected' : IDL.Null,
+  });
+  const UserApprovalInfo = IDL.Record({
+    'status' : ApprovalStatus,
+    'principal' : IDL.Principal,
   });
   
   return IDL.Service({
@@ -255,16 +419,24 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Nat],
         [],
       ),
+    'addMonthlyGoal' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Nat], [IDL.Nat], []),
+    'addPlotEntry' : IDL.Func([IDL.Nat, IDL.Text, Time, IDL.Text], [], []),
     'addSale' : IDL.Func(
         [IDL.Nat, IDL.Nat, IDL.Nat, IDL.Float64],
         [IDL.Nat],
         [],
       ),
     'addWorker' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
+    'approveUser' : IDL.Func([IDL.Principal], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-    'getAttendanceRecords' : IDL.Func(
-        [],
-        [IDL.Vec(AttendanceRecord)],
+    'bootstrapAdminRegistration' : IDL.Func([], [], []),
+    'deleteAttachment' : IDL.Func([IDL.Nat], [], []),
+    'deleteExpense' : IDL.Func([IDL.Nat], [], []),
+    'deleteFileAttachment' : IDL.Func([IDL.Nat], [], []),
+    'getAttachment' : IDL.Func([IDL.Nat], [IDL.Opt(FileAttachment)], ['query']),
+    'getAttachmentsForItem' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Vec(FileAttachmentMetadata)],
         ['query'],
       ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
@@ -275,40 +447,88 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getCustomers' : IDL.Func([], [IDL.Vec(Customer)], ['query']),
+    'getDepartments' : IDL.Func([], [IDL.Vec(Department)], ['query']),
     'getExpenseRecords' : IDL.Func([], [IDL.Vec(ExpenseRecord)], ['query']),
+    'getFileAttachment' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Opt(FileAttachment)],
+        ['query'],
+      ),
+    'getFileAttachmentMetadata' : IDL.Func(
+        [],
+        [IDL.Vec(FileAttachmentMetadata)],
+        ['query'],
+      ),
     'getIncomeRecords' : IDL.Func([], [IDL.Vec(IncomeRecord)], ['query']),
     'getInventoryItems' : IDL.Func([], [IDL.Vec(InventoryItem)], ['query']),
+    'getMonthlyGoal' : IDL.Func([IDL.Nat], [IDL.Opt(MonthlyGoal)], ['query']),
+    'getMonthlyGoals' : IDL.Func([], [IDL.Vec(MonthlyGoal)], ['query']),
     'getSales' : IDL.Func([], [IDL.Vec(Sale)], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
-    'getWorkerAttendance' : IDL.Func(
+    'getWeeklyReports' : IDL.Func([], [IDL.Vec(WeeklyReport)], ['query']),
+    'getWeeklyReportsByDateRange' : IDL.Func(
+        [Time, Time],
+        [IDL.Vec(WeeklyReport)],
+        ['query'],
+      ),
+    'getWeeklyReportsByDepartment' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(WeeklyReport)],
+        ['query'],
+      ),
+    'getWorkerDailyRecords' : IDL.Func(
+        [],
+        [IDL.Vec(WorkerDailyRecord)],
+        ['query'],
+      ),
+    'getWorkerDailyRecordsByWorker' : IDL.Func(
         [IDL.Nat],
-        [IDL.Vec(AttendanceRecord)],
+        [IDL.Vec(WorkerDailyRecord)],
         ['query'],
       ),
     'getWorkers' : IDL.Func([], [IDL.Vec(Worker)], ['query']),
+    'initializeFixedMonthlyGoals' : IDL.Func([], [], []),
+    'isAutoRegisteredAdmin' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-    'markAttendance' : IDL.Func(
-        [
-          IDL.Nat,
-          Time,
-          IDL.Variant({
-            'onLeave' : IDL.Null,
-            'present' : IDL.Null,
-            'late' : IDL.Null,
-            'absent' : IDL.Null,
-          }),
-        ],
-        [IDL.Nat],
+    'isCallerApproved' : IDL.Func([], [IDL.Bool], ['query']),
+    'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
+    'listPendingUsers' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
+    'recordWorkerDay' : IDL.Func(
+        [IDL.Nat, Time, IDL.Bool, IDL.Opt(Time), IDL.Opt(Time)],
+        [],
         [],
       ),
+    'rejectUser' : IDL.Func([IDL.Principal], [], []),
+    'requestApproval' : IDL.Func([], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
+    'submitWeeklyReport' : IDL.Func(
+        [IDL.Text, IDL.Text, Time, IDL.Text, IDL.Text, IDL.Text],
+        [],
+        [],
+      ),
+    'updateExpense' : IDL.Func(
+        [IDL.Nat, IDL.Float64, Time, ExpenseType, IDL.Text],
+        [],
+        [],
+      ),
     'updateInventoryItem' : IDL.Func(
         [IDL.Nat, IDL.Text, ItemType, IDL.Nat, IDL.Float64],
         [],
+        [],
+      ),
+    'uploadAttachmentToItem' : IDL.Func(
+        [IDL.Nat, IDL.Text, IDL.Text, IDL.Vec(IDL.Nat8)],
+        [IDL.Nat],
+        [],
+      ),
+    'uploadFileAttachment' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Vec(IDL.Nat8)],
+        [IDL.Nat],
         [],
       ),
   });
