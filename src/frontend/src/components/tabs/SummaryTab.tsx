@@ -6,8 +6,9 @@ import {
   Package,
   TrendingDown,
   TrendingUp,
+  Wheat,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -64,6 +65,46 @@ function formatNaira(amount: number): string {
   return `₦${amount.toFixed(0)}`;
 }
 
+interface HarvestEntry {
+  id: string;
+  date: string;
+  quantityKg: number;
+  harvestedBy: string;
+  plotLocation: string;
+  notes: string;
+}
+
+function useHarvestStats() {
+  const [raw] = useState<string | null>(() =>
+    localStorage.getItem("harvestLog"),
+  );
+
+  return useMemo(() => {
+    let entries: HarvestEntry[] = [];
+    try {
+      if (raw) entries = JSON.parse(raw) as HarvestEntry[];
+    } catch {
+      entries = [];
+    }
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+    );
+    const thisMonth = entries.filter((e) => {
+      const d = new Date(e.date);
+      return d >= monthStart && d <= monthEnd;
+    });
+    const totalKg = thisMonth.reduce((s, e) => s + e.quantityKg, 0);
+    return { count: thisMonth.length, totalKg };
+  }, [raw]);
+}
+
 export default function SummaryTab() {
   const { data: incomeRecords = [], isLoading: incomeLoading } =
     useGetIncomeRecords();
@@ -72,6 +113,7 @@ export default function SummaryTab() {
   const { data: inventoryItems = [], isLoading: inventoryLoading } =
     useGetInventoryItems();
   const { isLoading: salesLoading } = useGetSales();
+  const harvestStats = useHarvestStats();
 
   const isLoading =
     incomeLoading || expenseLoading || inventoryLoading || salesLoading;
@@ -169,8 +211,8 @@ export default function SummaryTab() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {["a", "b", "c", "d"].map((k) => (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          {["a", "b", "c", "d", "e"].map((k) => (
             <Card key={k}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <Skeleton className="h-4 w-24" />
@@ -187,9 +229,14 @@ export default function SummaryTab() {
     );
   }
 
+  const monthLabel = new Date().toLocaleString("en-NG", {
+    month: "long",
+    year: "numeric",
+  });
+
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Income</CardTitle>
@@ -254,6 +301,24 @@ export default function SummaryTab() {
             </div>
             <p className="text-xs text-muted-foreground">
               {inventoryItems.length} items
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Harvest Stats Card */}
+        <Card className="border-green-200 bg-green-50/40 dark:border-green-800 dark:bg-green-950/20">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Harvests This Month
+            </CardTitle>
+            <Wheat className="h-4 w-4 text-green-700" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-700">
+              {harvestStats.count}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {harvestStats.totalKg.toFixed(1)} kg — {monthLabel}
             </p>
           </CardContent>
         </Card>

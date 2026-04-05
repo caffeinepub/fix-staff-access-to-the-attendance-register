@@ -1,36 +1,42 @@
 # Pepper Farm Management App
 
 ## Current State
-A full-stack ICP app for pepper farm bookkeeping and operations. Has: income/expense tracking, inventory management, customer records, sales, worker attendance, farm time calendar, departmental reporting (weekly reports, monthly plot goals, department overview). Admin controls with deletion key 2642 and first-4-admin rule. File attachments on inventory items.
-
-Missing backend operations: deleteIncome, updateIncome, deleteCustomer, updateCustomer, deleteWorker, updateWorker, deleteSale. No analytics/charts on Summary. No CSV export. No worker attendance stats.
+The app is a comprehensive farm management tool with:
+- Dashboard with 9 navigation tabs: Summary, Income, Expenses, Inventory, Customers, Sales, Attendance, Farm Time, Farm Operations
+- Admin-only Verification tab for approving new users
+- First 4 users auto-registered as admins; first user is ultimate admin
+- Deletion key 2642 required for all deletes
+- Departmental reporting with clickable cards (Goodnews, Nicholas, Elvis, Wisdom)
+- Slide-in sheet panels per department with past reports and inline report submission form
+- Weekly reports section with dialog-based submission
+- Monthly plot goal tracker
+- File attachments for inventory items
+- Charts on Summary tab (monthly income vs expenses, expense breakdown)
+- CSV export on Income and Expense tabs
+- Attendance summary cards per worker
+- All monetary values in Nigerian Naira (₦)
+- All edit/delete buttons visible and functional
 
 ## Requested Changes (Diff)
 
 ### Add
-- Backend: deleteIncome, updateIncome, deleteCustomer, updateCustomer, deleteWorker, updateWorker, deleteSale
-- Summary tab: monthly income vs expenses bar chart (last 6 months), expense breakdown by category
-- Income tab: edit and delete buttons per row (admin only, delete requires key 2642)
-- Customers tab: edit and delete buttons per row (admin only)
-- Sales tab: delete button per row (admin only, delete requires key 2642)
-- Attendance/FarmTime: worker attendance stats card showing days present, absent, attendance rate
-- CSV export button on Income and Expense tabs
-- Workers tab: edit and delete buttons (admin only)
+- **Harvest Log**: New tab or sub-section to record pepper harvests (date, quantity in kg, harvested by, plot/location, notes). Viewable by all approved users, addable by admins.
+- **Notifications/Reminders Panel**: A small notice on the Dashboard reminding department leads when Saturday (weekly report deadline) is approaching (within 2 days) or overdue.
+- **Report Status Indicator**: On each department card in DepartmentsOverview, show a badge indicating whether that department has submitted a report for the current week ("Submitted" in green, "Pending" in amber).
+- **Quick Stats on Farm Operations tab**: Show total reports submitted, reports this month, and departments with pending reports for the current week — displayed as summary cards at the top of the Farm Operations tab.
 
 ### Modify
-- Summary tab: add charts section below existing cards
-- useQueries.ts: add hooks for all new mutations
+- **Department card report status**: Add a small badge on each department card showing whether the current week's report has been submitted.
+- **Summary tab**: Add a 5th card showing number of harvests this month (once harvest log is added).
 
 ### Remove
-- Nothing removed
+- Nothing removed.
 
 ## Implementation Plan
-1. Regenerate Motoko backend adding the 7 new CRUD functions
-2. Update useQueries.ts with new hooks: useDeleteIncome, useUpdateIncome, useDeleteCustomer, useUpdateCustomer, useDeleteWorker, useUpdateWorker, useDeleteSale
-3. Update SummaryTab with recharts bar chart (monthly trend) and pie/donut chart (expense categories)
-4. Update IncomeTab with edit dialog + delete confirmation requiring key 2642
-5. Update CustomersTab with edit + delete functionality
-6. Update SalesTab with delete per row
-7. Update FarmTimeTab/AttendanceTab with stats cards per worker
-8. Add CSV export utility and buttons to Income/Expense tabs
-9. Update AttendanceTab to allow edit/delete of workers
+1. Add harvest log: frontend-only using localStorage (no backend changes needed, keeping scope minimal and build stable). HarvestLog tab renders a table of harvest entries; admins can add new entries via a form dialog with date, quantity (kg), harvested by, plot/location, notes fields.
+2. Add Saturday reminder banner: computed client-side from current date; show in Dashboard above nav buttons when today is Thu/Fri/Sat (within 2 days of or on Saturday).
+3. Add weekly report status badge to department cards: compute from existing `getWeeklyReports` data — check if any report for that department has weekEnding in the current ISO week.
+4. Add Quick Stats cards to FarmOperationsTab header.
+5. Update Summary tab to include harvest count card.
+
+Note: Keeping all new features frontend-only (localStorage for harvests) to avoid risky backend changes that have caused deployment failures in the past.

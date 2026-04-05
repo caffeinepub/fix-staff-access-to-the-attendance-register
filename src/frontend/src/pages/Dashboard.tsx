@@ -1,9 +1,11 @@
+import { X } from "lucide-react";
 import { useState } from "react";
 import AttendanceTab from "../components/tabs/AttendanceTab";
 import CustomersTab from "../components/tabs/CustomersTab";
 import ExpenseTab from "../components/tabs/ExpenseTab";
 import FarmOperationsTab from "../components/tabs/FarmOperationsTab";
 import FarmTimeTab from "../components/tabs/FarmTimeTab";
+import HarvestLogTab from "../components/tabs/HarvestLogTab";
 import IncomeTab from "../components/tabs/IncomeTab";
 import InventoryTab from "../components/tabs/InventoryTab";
 import SalesTab from "../components/tabs/SalesTab";
@@ -21,6 +23,7 @@ type TabValue =
   | "attendance"
   | "farmTime"
   | "farmOperations"
+  | "harvestLog"
   | "verification";
 
 const NAV_ITEMS: { value: TabValue; label: string }[] = [
@@ -33,7 +36,49 @@ const NAV_ITEMS: { value: TabValue; label: string }[] = [
   { value: "attendance", label: "Attendance" },
   { value: "farmTime", label: "Farm Time" },
   { value: "farmOperations", label: "Farm Operations" },
+  { value: "harvestLog", label: "Harvest Log" },
 ];
+
+function ReportReminderBanner() {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+
+  const day = new Date().getDay(); // 0=Sun,1=Mon,...,6=Sat
+  if (day !== 4 && day !== 5 && day !== 6) return null;
+
+  const isSaturday = day === 6;
+
+  return (
+    <div
+      data-ocid="report_reminder.section"
+      className={`mb-4 flex items-start justify-between gap-3 rounded-lg border px-4 py-3 text-sm ${
+        isSaturday
+          ? "border-orange-300 bg-orange-50 text-orange-900 dark:border-orange-700 dark:bg-orange-950/30 dark:text-orange-200"
+          : "border-yellow-300 bg-yellow-50 text-yellow-900 dark:border-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-200"
+      }`}
+    >
+      <div className="flex items-start gap-2">
+        <span className="text-base leading-none mt-0.5">
+          {isSaturday ? "🚨" : "⏰"}
+        </span>
+        <p className="leading-relaxed">
+          {isSaturday
+            ? "Today is Saturday — weekly report submission day! Department leads, please submit your updates now."
+            : "Weekly reports are due Saturday. Department leads, please prepare your updates."}
+        </p>
+      </div>
+      <button
+        type="button"
+        aria-label="Dismiss reminder"
+        data-ocid="report_reminder.close_button"
+        className="flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity mt-0.5"
+        onClick={() => setDismissed(true)}
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const { data: isAdmin } = useIsCallerAdmin();
@@ -41,12 +86,16 @@ export default function Dashboard() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Saturday/Near-Saturday Report Reminder */}
+      <ReportReminderBanner />
+
       {/* Navigation Buttons */}
       <div className="mb-6 flex flex-wrap gap-2">
         {NAV_ITEMS.map((item) => (
           <button
             type="button"
             key={item.value}
+            data-ocid={`nav.${item.value}.link`}
             onClick={() => setActiveTab(item.value)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === item.value
@@ -60,6 +109,7 @@ export default function Dashboard() {
         {isAdmin && (
           <button
             type="button"
+            data-ocid="nav.verification.link"
             onClick={() => setActiveTab("verification")}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === "verification"
@@ -83,6 +133,7 @@ export default function Dashboard() {
         {activeTab === "attendance" && <AttendanceTab />}
         {activeTab === "farmTime" && <FarmTimeTab />}
         {activeTab === "farmOperations" && <FarmOperationsTab />}
+        {activeTab === "harvestLog" && <HarvestLogTab />}
         {isAdmin && activeTab === "verification" && <VerificationTab />}
       </div>
     </div>

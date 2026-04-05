@@ -1,4 +1,4 @@
-import type { Department } from "@/backend";
+import type { Department, WeeklyReport } from "@/backend";
 import {
   Accordion,
   AccordionContent,
@@ -27,14 +27,12 @@ import {
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { useGetDepartments, useSubmitWeeklyReport } from "@/hooks/useQueries";
 import {
-  useGetDepartments,
-  useGetWeeklyReports,
-  useSubmitWeeklyReport,
-} from "@/hooks/useQueries";
-import {
+  CheckCircle2,
   ChevronRight,
   ClipboardList,
+  Clock,
   Droplets,
   Info,
   Loader2,
@@ -43,7 +41,7 @@ import {
   Shovel,
   Sprout,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 const DEPT_ICONS: Record<string, React.ReactNode> = {
   Goodnews: <Sprout className="h-6 w-6 text-primary" />,
@@ -63,14 +61,43 @@ const DEPT_COLORS: Record<string, string> = {
     "bg-orange-50 border-orange-200 dark:bg-orange-950/30 dark:border-orange-800",
 };
 
+function getCurrentWeekRange(): { sunday: Date; saturday: Date } {
+  const now = new Date();
+  const day = now.getDay();
+  const sunday = new Date(now);
+  sunday.setDate(now.getDate() - day);
+  sunday.setHours(0, 0, 0, 0);
+  const saturday = new Date(sunday);
+  saturday.setDate(sunday.getDate() + 6);
+  saturday.setHours(23, 59, 59, 999);
+  return { sunday, saturday };
+}
+
+function useWeeklySubmissionStatus(allReports: WeeklyReport[]) {
+  return useMemo(() => {
+    const { sunday, saturday } = getCurrentWeekRange();
+    const submitted = new Set<string>();
+    for (const r of allReports) {
+      const ms = Number(r.weekEnding) / 1_000_000;
+      const d = new Date(ms);
+      if (d >= sunday && d <= saturday) {
+        submitted.add(r.departmentLead);
+      }
+    }
+    return submitted;
+  }, [allReports]);
+}
+
 function DepartmentCard({
   dept,
   onClick,
   ocid,
+  submittedThisWeek,
 }: {
   dept: Department;
   onClick: () => void;
   ocid: string;
+  submittedThisWeek: boolean;
 }) {
   const icon = DEPT_ICONS[dept.leadName] ?? (
     <Sprout className="h-6 w-6 text-primary" />
@@ -97,9 +124,28 @@ function DepartmentCard({
               <CardTitle className="text-lg font-bold">
                 {dept.leadName}
               </CardTitle>
-              <Badge variant="secondary" className="mt-1 text-xs">
-                Department Lead
-              </Badge>
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                <Badge variant="secondary" className="text-xs">
+                  Department Lead
+                </Badge>
+                {submittedThisWeek ? (
+                  <Badge
+                    className="text-xs bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700"
+                    variant="outline"
+                  >
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Submitted ✓
+                  </Badge>
+                ) : (
+                  <Badge
+                    className="text-xs bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700"
+                    variant="outline"
+                  >
+                    <Clock className="h-3 w-3 mr-1" />
+                    Pending
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
           <ChevronRight className="h-5 w-5 text-muted-foreground mt-1 flex-shrink-0" />
@@ -152,12 +198,13 @@ function DepartmentSheet({
   dept,
   open,
   onClose,
+  allReports,
 }: {
   dept: Department | null;
   open: boolean;
   onClose: () => void;
+  allReports: WeeklyReport[];
 }) {
-  const { data: allReports = [] } = useGetWeeklyReports();
   const submitReport = useSubmitWeeklyReport();
 
   const [showForm, setShowForm] = useState(false);
@@ -395,9 +442,14 @@ function DepartmentSheet({
   );
 }
 
-export default function DepartmentsOverview() {
+export default function DepartmentsOverview({
+  allReports,
+}: {
+  allReports: WeeklyReport[];
+}) {
   const { data: departments, isLoading, isError } = useGetDepartments();
   const [selectedDept, setSelectedDept] = useState<Department | null>(null);
+  const submittedLeads = useWeeklySubmissionStatus(allReports);
 
   return (
     <div className="space-y-6">
@@ -459,6 +511,7 @@ export default function DepartmentsOverview() {
                   dept={dept}
                   onClick={() => setSelectedDept(dept)}
                   ocid={`dept.card.button.${idx + 1}`}
+                  submittedThisWeek={submittedLeads.has(dept.leadName)}
                 />
               ))}
         </div>
@@ -499,6 +552,7 @@ export default function DepartmentsOverview() {
         dept={selectedDept}
         open={selectedDept !== null}
         onClose={() => setSelectedDept(null)}
+        allReports={allReports}
       />
     </div>
   );
