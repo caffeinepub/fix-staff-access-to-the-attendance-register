@@ -1,0 +1,259 @@
+type WorkerDailyRecord = 
+ record {
+   arrivalTime: opt Time;
+   date: Time;
+   departureTime: opt Time;
+   enteredBy: text;
+   present: bool;
+   timeOnFarm: opt int;
+   workerId: nat;
+ };
+type Worker = 
+ record {
+   enteredBy: text;
+   id: nat;
+   name: text;
+   role: text;
+ };
+type WeeklyReport = 
+ record {
+   achievements: text;
+   challenges: text;
+   departmentLead: text;
+   departmentName: text;
+   planForNextWeek: text;
+   weekEnding: Time;
+ };
+type UserProfile = record {name: text;};
+type UserApprovalInfo = 
+ record {
+   "principal": principal;
+   status: ApprovalStatus;
+ };
+type Time = int;
+type Sale = 
+ record {
+   customerId: nat;
+   date: Time;
+   enteredBy: text;
+   id: nat;
+   inventoryItemId: nat;
+   quantity: nat;
+   unitPrice: float64;
+ };
+type PlotEntry = 
+ record {
+   dateActivated: Time;
+   department: text;
+   plotName: text;
+ };
+type MonthlyGoal = 
+ record {
+   actualPlots: nat;
+   id: nat;
+   month: nat;
+   plotEntries: vec PlotEntry;
+   targetPlots: nat;
+   year: nat;
+ };
+type ItemType = 
+ variant {
+   equipment;
+   fertilizer;
+   peppers;
+   pesticide;
+ };
+type InventoryItem = 
+ record {
+   costPerUnit: float64;
+   enteredBy: text;
+   id: nat;
+   itemType: ItemType;
+   name: text;
+   quantity: nat;
+ };
+type IncomeSource = 
+ variant {
+   local;
+   market;
+   other;
+   wholesale;
+ };
+type IncomeRecord = 
+ record {
+   amount: float64;
+   date: Time;
+   description: text;
+   enteredBy: text;
+   id: nat;
+   source: IncomeSource;
+ };
+type HarvestEntry = 
+ record {
+   date: text;
+   enteredBy: principal;
+   harvestedBy: text;
+   id: nat;
+   notes: text;
+   plotLocation: text;
+   quantityKg: float64;
+   timestamp: int;
+ };
+type FileAttachmentMetadata = 
+ record {
+   filename: text;
+   id: nat;
+   inventoryItemId: nat;
+   mimeType: text;
+ };
+type FileAttachment = 
+ record {
+   content: blob;
+   filename: text;
+   id: nat;
+   inventoryItemId: nat;
+   mimeType: text;
+ };
+type FarmTimeEntry = 
+ record {
+   arrivalTime: opt text;
+   date: text;
+   departureTime: opt text;
+   enteredBy: principal;
+   hoursOnFarm: opt float64;
+   id: nat;
+   status: text;
+   timestamp: int;
+   workerId: nat;
+   workerName: text;
+ };
+type ExpenseType = 
+ variant {
+   equipment;
+   fertilizers;
+   labor;
+   other;
+   packaging;
+   transportation;
+ };
+type ExpenseRecord = 
+ record {
+   amount: float64;
+   category: ExpenseType;
+   date: Time;
+   description: text;
+   enteredBy: text;
+   id: nat;
+ };
+type Department = 
+ record {
+   description: text;
+   leadName: text;
+   name: text;
+ };
+type Customer = 
+ record {
+   contactDetails: text;
+   customerType: text;
+   enteredBy: text;
+   id: nat;
+   name: text;
+ };
+type ApprovalStatus = 
+ variant {
+   approved;
+   pending;
+   rejected;
+ };
+service : {
+  addCustomer: (name: text, contactDetails: text, customerType: text) ->
+   (nat);
+  addExpense: (amount: float64, date: Time, category: ExpenseType,
+   description: text) -> (nat);
+  addFarmTimeEntry: (workerId: nat, workerName: text, date: text,
+   arrivalTime: opt text, departureTime: opt text, status: text) ->
+   (FarmTimeEntry);
+  addHarvestEntry: (date: text, quantityKg: float64, harvestedBy: text,
+   plotLocation: text, notes: text) -> (HarvestEntry);
+  addIncome: (amount: float64, date: Time, source: IncomeSource, description:
+   text) -> (nat);
+  addInventoryItem: (name: text, itemType: ItemType, quantity: nat,
+   costPerUnit: float64) -> (nat);
+  addMonthlyGoal: (year: nat, month: nat, targetPlots: nat) -> (nat);
+  addPlotEntry: (monthlyGoalId: nat, plotName: text, dateActivated: Time,
+   department: text) -> ();
+  addSale: (customerId: nat, inventoryItemId: nat, quantity: nat, unitPrice:
+   float64) -> (nat);
+  addWorker: (name: text, role: text) -> (nat);
+  approveUser: (user: principal) -> ();
+  bootstrapAdminRegistration: () -> ();
+  deleteAttachment: (id: nat) -> ();
+  deleteCustomer: (id: nat) -> ();
+  deleteExpense: (id: nat) -> ();
+  deleteFarmTimeEntry: (id: nat) -> (bool);
+  deleteFileAttachment: (id: nat) -> ();
+  deleteHarvestEntry: (id: nat) -> (bool);
+  deleteIncome: (id: nat) -> ();
+  deleteInventoryItem: (id: nat) -> ();
+  deleteSale: (id: nat) -> ();
+  deleteWorker: (id: nat) -> ();
+  getAttachment: (id: nat) -> (opt FileAttachment) query;
+  getAttachmentsForItem: (inventoryItemId: nat) ->
+   (vec FileAttachmentMetadata) query;
+  getCallerUserProfile: () -> (opt UserProfile) query;
+  getCustomerPurchaseHistory: (customerId: nat) -> (vec Sale) query;
+  getCustomers: () -> (vec Customer) query;
+  getDepartments: () -> (vec Department) query;
+  getExpenseRecords: () -> (vec ExpenseRecord) query;
+  getFarmTimeEntries: () -> (vec FarmTimeEntry) query;
+  getFarmTimeEntriesByWorker: (workerId: nat) -> (vec FarmTimeEntry) query;
+  getFileAttachment: (id: nat) -> (opt FileAttachment) query;
+  getFileAttachmentMetadata: () -> (vec FileAttachmentMetadata) query;
+  getHarvestEntries: () -> (vec HarvestEntry) query;
+  getIncomeRecords: () -> (vec IncomeRecord) query;
+  getInventoryItems: () -> (vec InventoryItem) query;
+  getMonthlyGoal: (id: nat) -> (opt MonthlyGoal) query;
+  getMonthlyGoals: () -> (vec MonthlyGoal) query;
+  getSales: () -> (vec Sale) query;
+  getUserProfile: (user: principal) -> (opt UserProfile) query;
+  getWeeklyReports: () -> (vec WeeklyReport) query;
+  getWeeklyReportsByDateRange: (startDate: Time, endDate: Time) ->
+   (vec WeeklyReport) query;
+  getWeeklyReportsByDepartment: (departmentName: text) ->
+   (vec WeeklyReport) query;
+  getWorkerDailyRecords: () -> (vec WorkerDailyRecord) query;
+  getWorkerDailyRecordsByWorker: (workerId: nat) ->
+   (vec WorkerDailyRecord) query;
+  getWorkers: () -> (vec Worker) query;
+  initializeFixedMonthlyGoals: () -> ();
+  isAutoRegisteredAdmin: ("principal": principal) -> (bool) query;
+  isCallerApproved: () -> (bool) query;
+  listApprovals: () -> (vec UserApprovalInfo) query;
+  listPendingUsers: () -> (vec UserProfile) query;
+  recordWorkerDay: (workerId: nat, date: Time, present: bool, arrivalTime:
+   opt Time, departureTime: opt Time) -> ();
+  rejectUser: (user: principal) -> ();
+  requestApproval: () -> ();
+  saveCallerUserProfile: (profile: UserProfile) -> ();
+  setApproval: (user: principal, status: ApprovalStatus) -> ();
+  submitWeeklyReport: (departmentLead: text, departmentName: text,
+   weekEnding: Time, achievements: text, challenges: text, planForNextWeek:
+   text) -> ();
+  updateCustomer: (id: nat, name: text, contactDetails: text, customerType:
+   text) -> ();
+  updateExpense: (id: nat, amount: float64, date: Time, category:
+   ExpenseType, description: text) -> ();
+  updateFarmTimeEntry: (id: nat, arrivalTime: opt text, departureTime:
+   opt text, status: text) -> (opt FarmTimeEntry);
+  updateHarvestEntry: (id: nat, date: text, quantityKg: float64, harvestedBy:
+   text, plotLocation: text, notes: text) -> (opt HarvestEntry);
+  updateIncome: (id: nat, amount: float64, date: Time, source: IncomeSource,
+   description: text) -> ();
+  updateInventoryItem: (id: nat, name: text, itemType: ItemType, quantity:
+   nat, costPerUnit: float64) -> ();
+  updateWorker: (id: nat, name: text, role: text) -> ();
+  uploadAttachmentToItem: (inventoryItemId: nat, filename: text, mimeType:
+   text, content: blob) -> (nat);
+  uploadFileAttachment: (filename: text, mimeType: text, content: blob) ->
+   (nat);
+}

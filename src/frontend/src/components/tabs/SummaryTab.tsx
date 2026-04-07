@@ -1,14 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertTriangle,
   DollarSign,
   Package,
+  Target,
   TrendingDown,
   TrendingUp,
   Wheat,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   Bar,
   BarChart,
@@ -21,8 +23,10 @@ import {
 } from "recharts";
 import {
   useGetExpenseRecords,
+  useGetHarvestEntries,
   useGetIncomeRecords,
   useGetInventoryItems,
+  useGetMonthlyGoals,
   useGetSales,
 } from "../../hooks/useQueries";
 
@@ -42,12 +46,12 @@ const MONTH_NAMES = [
 ];
 
 const CATEGORY_COLORS: Record<string, string> = {
-  fertilizers: "#16a34a",
-  packaging: "#2563eb",
-  transportation: "#d97706",
-  labor: "#dc2626",
-  equipment: "#7c3aed",
-  other: "#6b7280",
+  fertilizers: "var(--chart-1)",
+  packaging: "var(--chart-2)",
+  transportation: "var(--chart-3)",
+  labor: "var(--chart-4)",
+  equipment: "var(--chart-5)",
+  other: "var(--chart-6, oklch(0.55 0.02 240))",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -65,28 +69,30 @@ function formatNaira(amount: number): string {
   return `₦${amount.toFixed(0)}`;
 }
 
-interface HarvestEntry {
-  id: string;
-  date: string;
-  quantityKg: number;
-  harvestedBy: string;
-  plotLocation: string;
-  notes: string;
-}
+export default function SummaryTab() {
+  const { data: incomeRecords = [], isLoading: incomeLoading } =
+    useGetIncomeRecords();
+  const { data: expenseRecords = [], isLoading: expenseLoading } =
+    useGetExpenseRecords();
+  const { data: inventoryItems = [], isLoading: inventoryLoading } =
+    useGetInventoryItems();
+  const { isLoading: salesLoading } = useGetSales();
+  const { data: harvestEntries = [], isLoading: harvestLoading } =
+    useGetHarvestEntries();
+  const { data: monthlyGoals = [] } = useGetMonthlyGoals();
 
-function useHarvestStats() {
-  const [raw] = useState<string | null>(() =>
-    localStorage.getItem("harvestLog"),
-  );
+  const isLoading =
+    incomeLoading ||
+    expenseLoading ||
+    inventoryLoading ||
+    salesLoading ||
+    harvestLoading;
 
-  return useMemo(() => {
-    let entries: HarvestEntry[] = [];
-    try {
-      if (raw) entries = JSON.parse(raw) as HarvestEntry[];
-    } catch {
-      entries = [];
-    }
-    const now = new Date();
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+
+  const harvestStats = useMemo(() => {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(
       now.getFullYear(),
@@ -96,37 +102,32 @@ function useHarvestStats() {
       59,
       59,
     );
-    const thisMonth = entries.filter((e) => {
+    const thisMonth = harvestEntries.filter((e) => {
       const d = new Date(e.date);
       return d >= monthStart && d <= monthEnd;
     });
-    const totalKg = thisMonth.reduce((s, e) => s + e.quantityKg, 0);
-    return { count: thisMonth.length, totalKg };
-  }, [raw]);
-}
+    const yearTotal = harvestEntries.reduce((s, e) => s + e.quantityKg, 0);
+    const monthKg = thisMonth.reduce((s, e) => s + e.quantityKg, 0);
+    return { count: thisMonth.length, monthKg, yearTotal };
+  }, [harvestEntries, now]);
 
-export default function SummaryTab() {
-  const { data: incomeRecords = [], isLoading: incomeLoading } =
-    useGetIncomeRecords();
-  const { data: expenseRecords = [], isLoading: expenseLoading } =
-    useGetExpenseRecords();
-  const { data: inventoryItems = [], isLoading: inventoryLoading } =
-    useGetInventoryItems();
-  const { isLoading: salesLoading } = useGetSales();
-  const harvestStats = useHarvestStats();
-
-  const isLoading =
-    incomeLoading || expenseLoading || inventoryLoading || salesLoading;
+  const plotStats = useMemo(() => {
+    const currentGoal = monthlyGoals.find(
+      (g) => Number(g.year) === currentYear && Number(g.month) === currentMonth,
+    );
+    const yearTotal = monthlyGoals
+      .filter((g) => Number(g.year) === currentYear)
+      .reduce((s, g) => s + Number(g.actualPlots), 0);
+    return {
+      actual: currentGoal ? Number(currentGoal.actualPlots) : 0,
+      target: currentGoal ? Number(currentGoal.targetPlots) : 2,
+      yearTotal,
+    };
+  }, [monthlyGoals, currentYear, currentMonth]);
 
   const summary = useMemo(() => {
-    const totalIncome = incomeRecords.reduce(
-      (sum, record) => sum + record.amount,
-      0,
-    );
-    const totalExpenses = expenseRecords.reduce(
-      (sum, record) => sum + record.amount,
-      0,
-    );
+    const totalIncome = incomeRecords.reduce((sum, r) => sum + r.amount, 0);
+    const totalExpenses = expenseRecords.reduce((sum, r) => sum + r.amount, 0);
     const netProfit = totalIncome - totalExpenses;
     const inventoryValue = inventoryItems.reduce(
       (sum, item) => sum + Number(item.quantity) * item.costPerUnit,
@@ -135,7 +136,6 @@ export default function SummaryTab() {
     const lowStockItems = inventoryItems.filter(
       (item) => Number(item.quantity) < 10,
     );
-
     return {
       totalIncome,
       totalExpenses,
@@ -146,19 +146,15 @@ export default function SummaryTab() {
   }, [incomeRecords, expenseRecords, inventoryItems]);
 
   const recentTransactions = useMemo(() => {
-    const allTransactions = [
+    return [
       ...incomeRecords.map((r) => ({ ...r, type: "income" as const })),
       ...expenseRecords.map((r) => ({ ...r, type: "expense" as const })),
     ]
       .sort((a, b) => Number(b.date - a.date))
       .slice(0, 5);
-
-    return allTransactions;
   }, [incomeRecords, expenseRecords]);
 
-  // Last 6 months income vs expenses chart data
   const monthlyChartData = useMemo(() => {
-    const now = new Date();
     const months: {
       key: string;
       label: string;
@@ -175,7 +171,6 @@ export default function SummaryTab() {
       });
     }
     const monthMap = Object.fromEntries(months.map((m) => [m.key, m]));
-
     for (const r of incomeRecords) {
       const d = new Date(Number(r.date) / 1_000_000);
       const key = `${d.getFullYear()}-${d.getMonth()}`;
@@ -186,11 +181,9 @@ export default function SummaryTab() {
       const key = `${d.getFullYear()}-${d.getMonth()}`;
       if (monthMap[key]) monthMap[key].expenses += r.amount;
     }
-
     return months;
-  }, [incomeRecords, expenseRecords]);
+  }, [incomeRecords, expenseRecords, now]);
 
-  // Expense breakdown by category
   const expenseCategoryData = useMemo(() => {
     const totals: Record<string, number> = {};
     for (const r of expenseRecords) {
@@ -211,8 +204,8 @@ export default function SummaryTab() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-          {["a", "b", "c", "d", "e"].map((k) => (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {["a", "b", "c", "d"].map((k) => (
             <Card key={k}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <Skeleton className="h-4 w-24" />
@@ -229,21 +222,26 @@ export default function SummaryTab() {
     );
   }
 
-  const monthLabel = new Date().toLocaleString("en-NG", {
+  const monthLabel = now.toLocaleString("en-NG", {
     month: "long",
     year: "numeric",
   });
+  const plotProgressPct = Math.min(
+    100,
+    (plotStats.actual / plotStats.target) * 100,
+  );
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      {/* Financial Overview Row */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Income</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
+            <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-primary">
               ₦{summary.totalIncome.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -257,10 +255,10 @@ export default function SummaryTab() {
             <CardTitle className="text-sm font-medium">
               Total Expenses
             </CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-600" />
+            <TrendingDown className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-destructive">
               ₦{summary.totalExpenses.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -276,9 +274,7 @@ export default function SummaryTab() {
           </CardHeader>
           <CardContent>
             <div
-              className={`text-2xl font-bold ${
-                summary.netProfit >= 0 ? "text-green-600" : "text-red-600"
-              }`}
+              className={`text-2xl font-bold ${summary.netProfit >= 0 ? "text-primary" : "text-destructive"}`}
             >
               ₦{summary.netProfit.toFixed(2)}
             </div>
@@ -304,21 +300,70 @@ export default function SummaryTab() {
             </p>
           </CardContent>
         </Card>
+      </div>
 
-        {/* Harvest Stats Card */}
-        <Card className="border-green-200 bg-green-50/40 dark:border-green-800 dark:bg-green-950/20">
+      {/* Farm Activity Row */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Harvest Summary Card */}
+        <Card className="border-primary/30 bg-primary/5 dark:border-primary/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Harvests This Month
+              Harvest Summary
             </CardTitle>
-            <Wheat className="h-4 w-4 text-green-700" />
+            <Wheat className="h-4 w-4 text-primary" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-700">
-              {harvestStats.count}
+          <CardContent className="space-y-2">
+            <div className="flex items-end justify-between">
+              <div>
+                <div className="text-2xl font-bold text-primary">
+                  {harvestStats.monthKg.toFixed(1)} kg
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {harvestStats.count} harvests — {monthLabel}
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-semibold text-primary/80">
+                  {harvestStats.yearTotal.toFixed(1)} kg
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Year-to-date total
+                </p>
+              </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Plot Expansion Card */}
+        <Card className="border-primary/30 bg-primary/5">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Plot Expansion — {monthLabel}
+            </CardTitle>
+            <Target className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-end justify-between">
+              <div>
+                <div className="text-2xl font-bold text-primary">
+                  {plotStats.actual} / {plotStats.target}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  new plots this month
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-semibold">
+                  {plotStats.yearTotal}
+                </div>
+                <p className="text-xs text-muted-foreground">plots this year</p>
+              </div>
+            </div>
+            <Progress value={plotProgressPct} className="h-2" />
             <p className="text-xs text-muted-foreground">
-              {harvestStats.totalKg.toFixed(1)} kg — {monthLabel}
+              {plotStats.actual >= plotStats.target
+                ? "🎉 Monthly target reached!"
+                : `${plotStats.target - plotStats.actual} more plot${plotStats.target - plotStats.actual !== 1 ? "s" : ""} needed to reach target`}
             </p>
           </CardContent>
         </Card>
@@ -341,8 +386,8 @@ export default function SummaryTab() {
                     key={`${transaction.type}-${transaction.id}`}
                     className="flex items-center justify-between"
                   >
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
                         {transaction.description}
                       </p>
                       <p className="text-xs text-muted-foreground">
@@ -352,11 +397,7 @@ export default function SummaryTab() {
                       </p>
                     </div>
                     <div
-                      className={`text-sm font-semibold ${
-                        transaction.type === "income"
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
+                      className={`text-sm font-semibold ml-3 ${transaction.type === "income" ? "text-primary" : "text-destructive"}`}
                     >
                       {transaction.type === "income" ? "+" : "-"}₦
                       {transaction.amount.toFixed(2)}
@@ -371,7 +412,7 @@ export default function SummaryTab() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              <AlertTriangle className="h-5 w-5 text-destructive" />
               Low Stock Alerts
             </CardTitle>
           </CardHeader>
@@ -393,7 +434,7 @@ export default function SummaryTab() {
                         {item.itemType}
                       </p>
                     </div>
-                    <div className="text-sm font-semibold text-yellow-600">
+                    <div className="text-sm font-semibold text-destructive">
                       {Number(item.quantity)} left
                     </div>
                   </div>
@@ -441,13 +482,13 @@ export default function SummaryTab() {
                 />
                 <Bar
                   dataKey="income"
-                  fill="#16a34a"
+                  fill="var(--chart-1)"
                   radius={[4, 4, 0, 0]}
                   name="income"
                 />
                 <Bar
                   dataKey="expenses"
-                  fill="#dc2626"
+                  fill="var(--chart-4)"
                   radius={[4, 4, 0, 0]}
                   name="expenses"
                 />
@@ -456,11 +497,11 @@ export default function SummaryTab() {
           )}
           <div className="flex gap-4 mt-2 justify-center">
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span className="inline-block w-3 h-3 rounded-sm bg-green-600" />
+              <span className="inline-block w-3 h-3 rounded-sm bg-primary" />{" "}
               Income
             </span>
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span className="inline-block w-3 h-3 rounded-sm bg-red-600" />
+              <span className="inline-block w-3 h-3 rounded-sm bg-destructive" />{" "}
               Expenses
             </span>
           </div>

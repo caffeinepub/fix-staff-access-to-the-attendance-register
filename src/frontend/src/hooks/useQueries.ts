@@ -8,8 +8,10 @@ import type {
   Department,
   ExpenseRecord,
   ExpenseType,
+  FarmTimeEntry,
   FileAttachment,
   FileAttachmentMetadata,
+  HarvestEntry,
   IncomeRecord,
   IncomeSource,
   InventoryItem,
@@ -18,7 +20,6 @@ import type {
   Sale,
   UserApprovalInfo,
   UserProfile,
-  UserRole,
   WeeklyReport,
   Worker,
   WorkerDailyRecord,
@@ -566,45 +567,33 @@ export function useRecordWorkerDay() {
 // User Role Queries
 export function useIsCallerAdmin() {
   const { actor, isFetching } = useActor();
+  const { identity } = useInternetIdentity();
 
   return useQuery<boolean>({
     queryKey: ["isCallerAdmin"],
     queryFn: async () => {
-      if (!actor) return false;
-      return actor.isCallerAdmin();
+      if (!actor || !identity) return false;
+      const principal = identity.getPrincipal();
+      return actor.isAutoRegisteredAdmin(principal);
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !isFetching && !!identity,
   });
 }
 
 export function useGetCallerUserRole() {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<UserRole>({
+  // Not available in current backend — returns undefined
+  return useQuery<undefined>({
     queryKey: ["callerUserRole"],
-    queryFn: async () => {
-      if (!actor) throw new Error("Actor not available");
-      return actor.getCallerUserRole();
-    },
-    enabled: !!actor && !isFetching,
+    queryFn: async () => undefined,
+    enabled: false,
   });
 }
 
 export function useAssignCallerUserRole() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-
+  // Stub — not in backend
   return useMutation({
-    mutationFn: async (data: { user: Principal; role: UserRole }) => {
-      if (!actor) throw new Error("Actor not available");
-      return actor.assignCallerUserRole(data.user, data.role);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["callerUserRole"] });
-      toast.success("User role assigned successfully");
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to assign user role: ${error.message}`);
+    mutationFn: async (_data: { user: Principal; role: unknown }) => {
+      throw new Error("Not implemented");
     },
   });
 }
@@ -1014,6 +1003,216 @@ export function useDeleteInventoryItem() {
     },
     onError: (error: Error) => {
       toast.error(`Failed to delete inventory item: ${error.message}`);
+    },
+  });
+}
+
+// ─── Harvest Entry Queries ─────────────────────────────────────────────────
+
+export function useGetHarvestEntries() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<HarvestEntry[]>({
+    queryKey: ["harvestEntries"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getHarvestEntries();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useAddHarvestEntry() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      date: string;
+      quantityKg: number;
+      harvestedBy: string;
+      plotLocation: string;
+      notes: string;
+    }) => {
+      if (!actor) throw new Error("Actor not available");
+      return actor.addHarvestEntry(
+        data.date,
+        data.quantityKg,
+        data.harvestedBy,
+        data.plotLocation,
+        data.notes,
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["harvestEntries"] });
+      toast.success("Harvest entry recorded successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to record harvest: ${error.message}`);
+    },
+  });
+}
+
+export function useUpdateHarvestEntry() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      id: bigint;
+      date: string;
+      quantityKg: number;
+      harvestedBy: string;
+      plotLocation: string;
+      notes: string;
+    }) => {
+      if (!actor) throw new Error("Actor not available");
+      return actor.updateHarvestEntry(
+        data.id,
+        data.date,
+        data.quantityKg,
+        data.harvestedBy,
+        data.plotLocation,
+        data.notes,
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["harvestEntries"] });
+      toast.success("Harvest entry updated successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to update harvest entry: ${error.message}`);
+    },
+  });
+}
+
+export function useDeleteHarvestEntry() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error("Actor not available");
+      return actor.deleteHarvestEntry(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["harvestEntries"] });
+      toast.success("Harvest entry deleted");
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to delete harvest entry: ${error.message}`);
+    },
+  });
+}
+
+// ─── Farm Time Entry Queries ───────────────────────────────────────────────
+
+export function useGetFarmTimeEntries() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<FarmTimeEntry[]>({
+    queryKey: ["farmTimeEntries"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getFarmTimeEntries();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useGetFarmTimeEntriesByWorker(workerId: bigint | null) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<FarmTimeEntry[]>({
+    queryKey: ["farmTimeEntriesByWorker", workerId?.toString()],
+    queryFn: async () => {
+      if (!actor || workerId === null) return [];
+      return actor.getFarmTimeEntriesByWorker(workerId);
+    },
+    enabled: !!actor && !isFetching && workerId !== null,
+  });
+}
+
+export function useAddFarmTimeEntry() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      workerId: bigint;
+      workerName: string;
+      date: string;
+      arrivalTime: string | null;
+      departureTime: string | null;
+      status: string;
+    }) => {
+      if (!actor) throw new Error("Actor not available");
+      return actor.addFarmTimeEntry(
+        data.workerId,
+        data.workerName,
+        data.date,
+        data.arrivalTime,
+        data.departureTime,
+        data.status,
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["farmTimeEntries"] });
+      queryClient.invalidateQueries({ queryKey: ["farmTimeEntriesByWorker"] });
+      toast.success("Farm time entry recorded successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to record farm time: ${error.message}`);
+    },
+  });
+}
+
+export function useUpdateFarmTimeEntry() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      id: bigint;
+      arrivalTime: string | null;
+      departureTime: string | null;
+      status: string;
+    }) => {
+      if (!actor) throw new Error("Actor not available");
+      return actor.updateFarmTimeEntry(
+        data.id,
+        data.arrivalTime,
+        data.departureTime,
+        data.status,
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["farmTimeEntries"] });
+      queryClient.invalidateQueries({ queryKey: ["farmTimeEntriesByWorker"] });
+      toast.success("Farm time entry updated");
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to update farm time entry: ${error.message}`);
+    },
+  });
+}
+
+export function useDeleteFarmTimeEntry() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error("Actor not available");
+      return actor.deleteFarmTimeEntry(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["farmTimeEntries"] });
+      queryClient.invalidateQueries({ queryKey: ["farmTimeEntriesByWorker"] });
+      toast.success("Farm time entry deleted");
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to delete farm time entry: ${error.message}`);
     },
   });
 }

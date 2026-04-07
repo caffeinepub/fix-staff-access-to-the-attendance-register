@@ -1,0 +1,29 @@
+{
+  "overview": "A comprehensive pepper farm management app for tracking income, expenses, inventory, customers, sales, worker attendance, farm time, departmental reporting, and harvest logging. Built for a small Nigerian pepper farm with admin controls, user verification, and structured weekly departmental reports.",
+  "features": [
+    "Income & expense bookkeeping in Nigerian Naira (₦)",
+    "Inventory management with file attachments",
+    "Customer and sales tracking",
+    "Worker attendance register with summary cards",
+    "Farm time logging with backend persistence",
+    "Departmental weekly reporting (4 leads: Goodnews, Nicholas, Elvis, Wisdom)",
+    "Harvest log with backend persistence",
+    "Admin roles with deletion key security (2642)",
+    "User verification and approval workflow",
+    "Monthly plot expansion tracker (2 plots/month goal)",
+    "Department performance metrics and compliance badges",
+    "Income vs expenses trend charts and CSV export",
+    "Saturday report reminder banner"
+  ],
+  "category": "business-productivity",
+  "tags": [
+    "farm-management",
+    "bookkeeping",
+    "nigeria",
+    "pepper-farm",
+    "attendance",
+    "reporting",
+    "inventory"
+  ],
+  "last_updated": "2026-04-07T23:21:00.850Z"
+}

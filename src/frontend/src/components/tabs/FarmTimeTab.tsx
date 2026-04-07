@@ -1,3 +1,4 @@
+import type { FarmTimeEntry } from "@/backend";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,21 +17,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import {
-  useGetWorkerDailyRecords,
+  useAddFarmTimeEntry,
+  useDeleteFarmTimeEntry,
+  useGetFarmTimeEntries,
   useGetWorkers,
-  useRecordWorkerDay,
+  useIsCallerAdmin,
+  useUpdateFarmTimeEntry,
 } from "@/hooks/useQueries";
+import { generateMonthGrid } from "@/utils/farmTime";
 import {
-  dateToNanos,
-  formatDuration,
-  formatNanosToTime,
-  generateMonthGrid,
-  nanosToDate,
-  parseTimeToNanos,
-} from "@/utils/farmTime";
-import { ChevronLeft, ChevronRight, Clock, User } from "lucide-react";
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Pencil,
+  Trash2,
+  User,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 
 function formatDate(d: Date): string {
@@ -41,41 +46,79 @@ function formatDate(d: Date): string {
   });
 }
 
+function formatDateStr(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-NG", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function toDateString(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function calcHours(arrival: string, departure: string): string {
+  const [ah, am] = arrival.split(":").map(Number);
+  const [dh, dm] = departure.split(":").map(Number);
+  const totalMins = dh * 60 + dm - (ah * 60 + am);
+  if (totalMins <= 0) return "—";
+  const h = Math.floor(totalMins / 60);
+  const m = totalMins % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
 export default function FarmTimeTab() {
   const { data: workers = [] } = useGetWorkers();
-  const { data: allRecords = [] } = useGetWorkerDailyRecords();
-  const recordWorkerDayMutation = useRecordWorkerDay();
+  const { data: allEntries = [], isLoading } = useGetFarmTimeEntries();
+  const { data: isAdmin } = useIsCallerAdmin();
+  const addMutation = useAddFarmTimeEntry();
+  const updateMutation = useUpdateFarmTimeEntry();
+  const deleteMutation = useDeleteFarmTimeEntry();
 
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>("all");
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<FarmTimeEntry | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedWorkerForDay, setSelectedWorkerForDay] = useState<string>("");
   const [present, setPresent] = useState(true);
   const [arrivalTime, setArrivalTime] = useState("08:00");
   const [departureTime, setDepartureTime] = useState("17:00");
 
+  const [deleteTarget, setDeleteTarget] = useState<bigint | null>(null);
+  const [deleteKey, setDeleteKey] = useState("");
+  const [deleteKeyError, setDeleteKeyError] = useState("");
+
   const monthGrid = useMemo(
     () => generateMonthGrid(currentYear, currentMonth),
     [currentYear, currentMonth],
   );
 
-  const filteredRecords = useMemo(() => {
-    if (selectedWorkerId === "all") return allRecords;
-    return allRecords.filter((r) => r.workerId.toString() === selectedWorkerId);
-  }, [allRecords, selectedWorkerId]);
+  const filteredEntries = useMemo(() => {
+    let list = allEntries;
+    if (selectedWorkerId !== "all") {
+      list = list.filter((e) => e.workerId.toString() === selectedWorkerId);
+    }
+    return [...list].sort((a, b) => b.date.localeCompare(a.date));
+  }, [allEntries, selectedWorkerId]);
 
-  const recordsByDateWorker = useMemo(() => {
-    const map: Record<string, (typeof allRecords)[0]> = {};
-    for (const r of allRecords) {
-      const d = nanosToDate(r.date);
-      const key = `${r.workerId}-${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-      map[key] = r;
+  // Map: workerId-dateStr -> entry for calendar view
+  const entryByWorkerDate = useMemo(() => {
+    const map: Record<string, FarmTimeEntry> = {};
+    for (const e of allEntries) {
+      map[`${e.workerId}-${e.date}`] = e;
     }
     return map;
-  }, [allRecords]);
+  }, [allEntries]);
 
   const prevMonth = () => {
     if (currentMonth === 0) {
@@ -91,7 +134,8 @@ export default function FarmTimeTab() {
     } else setCurrentMonth((m) => m + 1);
   };
 
-  const handleDayClick = (date: Date) => {
+  const openAddDialog = (date: Date) => {
+    setEditTarget(null);
     setSelectedDate(date);
     setSelectedWorkerForDay(
       selectedWorkerId !== "all"
@@ -104,33 +148,66 @@ export default function FarmTimeTab() {
     setDialogOpen(true);
   };
 
+  const openEditDialog = (entry: FarmTimeEntry) => {
+    setEditTarget(entry);
+    setSelectedDate(null);
+    setSelectedWorkerForDay(entry.workerId.toString());
+    setPresent(entry.status !== "absent");
+    setArrivalTime(entry.arrivalTime ?? "08:00");
+    setDepartureTime(entry.departureTime ?? "17:00");
+    setDialogOpen(true);
+  };
+
   const handleSave = async () => {
-    if (!selectedDate || !selectedWorkerForDay) return;
-    const dateNs = dateToNanos(selectedDate);
-    const arrivalNs = present
-      ? parseTimeToNanos(selectedDate, arrivalTime)
-      : null;
-    const departureNs = present
-      ? parseTimeToNanos(selectedDate, departureTime)
-      : null;
-    await recordWorkerDayMutation.mutateAsync({
-      workerId: BigInt(selectedWorkerForDay),
-      date: dateNs,
-      present,
-      arrivalTime: arrivalNs,
-      departureTime: departureNs,
-    });
+    const status = present ? "present" : "absent";
+    const arriv = present ? arrivalTime : null;
+    const depart = present ? departureTime : null;
+
+    if (editTarget) {
+      await updateMutation.mutateAsync({
+        id: editTarget.id,
+        arrivalTime: arriv,
+        departureTime: depart,
+        status,
+      });
+    } else {
+      if (!selectedDate || !selectedWorkerForDay) return;
+      const worker = workers.find(
+        (w) => w.id.toString() === selectedWorkerForDay,
+      );
+      await addMutation.mutateAsync({
+        workerId: BigInt(selectedWorkerForDay),
+        workerName: worker?.name ?? "Unknown",
+        date: toDateString(selectedDate),
+        arrivalTime: arriv,
+        departureTime: depart,
+        status,
+      });
+    }
     setDialogOpen(false);
+    setEditTarget(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deleteKey !== "2642") {
+      setDeleteKeyError("Incorrect key. Please try again.");
+      return;
+    }
+    if (deleteTarget === null) return;
+    await deleteMutation.mutateAsync(deleteTarget);
+    setDeleteTarget(null);
+    setDeleteKey("");
+    setDeleteKeyError("");
   };
 
   const monthName = new Date(currentYear, currentMonth).toLocaleString(
     "en-NG",
-    { month: "long", year: "numeric" },
+    {
+      month: "long",
+      year: "numeric",
+    },
   );
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-  const getWorkerName = (id: bigint) =>
-    workers.find((w) => w.id === id)?.name ?? `Worker #${id}`;
 
   return (
     <div className="space-y-6">
@@ -184,32 +261,26 @@ export default function FarmTimeTab() {
           {monthGrid.map((date) => {
             const isToday = date.toDateString() === new Date().toDateString();
             const isCurrentMonth = date.getMonth() === currentMonth;
-            const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+            const dateStr = toDateString(date);
 
             const workersToShow =
               selectedWorkerId === "all"
                 ? workers
                 : workers.filter((w) => w.id.toString() === selectedWorkerId);
-            const dayRecords = workersToShow
-              .map((w) => {
-                const key = `${w.id}-${dateKey}`;
-                return recordsByDateWorker[key];
-              })
+            const dayEntries = workersToShow
+              .map((w) => entryByWorkerDate[`${w.id}-${dateStr}`])
               .filter(Boolean);
-
-            const hasPresent = dayRecords.some((r) => r.present);
-            const hasAbsent = dayRecords.some((r) => !r.present);
+            const hasPresent = dayEntries.some(
+              (e) => e.status === "present" || e.status === "late",
+            );
+            const hasAbsent = dayEntries.some((e) => e.status === "absent");
 
             return (
               <button
                 type="button"
-                key={dateKey}
-                onClick={() => handleDayClick(date)}
-                className={`h-16 w-full text-left border-t border-border/50 p-1 cursor-pointer transition-colors hover:bg-primary/5 ${
-                  isToday
-                    ? "bg-primary/10 ring-1 ring-inset ring-primary/30"
-                    : ""
-                } ${!isCurrentMonth ? "opacity-40" : ""}`}
+                key={dateStr}
+                onClick={() => isAdmin && openAddDialog(date)}
+                className={`h-16 w-full text-left border-t border-border/50 p-1 transition-colors ${isAdmin ? "cursor-pointer hover:bg-primary/5" : "cursor-default"} ${isToday ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : ""} ${!isCurrentMonth ? "opacity-40" : ""}`}
               >
                 <div
                   className={`text-xs font-medium mb-1 ${isToday ? "text-primary" : "text-foreground"}`}
@@ -246,106 +317,151 @@ export default function FarmTimeTab() {
           <span className="w-3 h-3 rounded-full bg-destructive inline-block" />{" "}
           Absent
         </span>
+        {isAdmin && (
+          <span className="text-xs ml-auto">(Click a date to log time)</span>
+        )}
       </div>
 
       {/* Records Table */}
-      {filteredRecords.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold">Recent Records</h3>
-          <div className="rounded-xl border border-border overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-muted/50 border-b border-border">
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                      Worker
-                    </th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                      Date
-                    </th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                      Status
-                    </th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                      Arrival
-                    </th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                      Departure
-                    </th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5" />
-                        Time on Farm
-                      </span>
-                    </th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <User className="h-3.5 w-3.5" />
-                        Entered By
-                      </span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredRecords
-                    .slice()
-                    .reverse()
-                    .slice(0, 20)
-                    .map((record) => (
-                      <tr
-                        key={`${record.workerId}-${record.date}`}
-                        className="border-b border-border/50 hover:bg-muted/30"
-                      >
-                        <td className="px-4 py-3">
-                          {getWorkerName(record.workerId)}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {formatDate(nanosToDate(record.date))}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge
-                            variant={record.present ? "default" : "destructive"}
-                          >
-                            {record.present ? "Present" : "Absent"}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {record.arrivalTime != null
-                            ? formatNanosToTime(record.arrivalTime)
-                            : "—"}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {record.departureTime != null
-                            ? formatNanosToTime(record.departureTime)
-                            : "—"}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {record.timeOnFarm != null
-                            ? formatDuration(record.timeOnFarm)
-                            : "—"}
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                          {record.enteredBy || "Unknown"}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
+      {isLoading ? (
+        <div className="space-y-2">
+          {["a", "b", "c"].map((k) => (
+            <Skeleton key={k} className="h-12 w-full" />
+          ))}
+        </div>
+      ) : (
+        filteredEntries.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold">Recent Records</h3>
+            <div className="rounded-xl border border-border overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-muted/50 border-b border-border">
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                        Worker
+                      </th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                        Date
+                      </th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                        Status
+                      </th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                        Arrival
+                      </th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                        Departure
+                      </th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3.5 w-3.5" />
+                          Time on Farm
+                        </span>
+                      </th>
+                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <User className="h-3.5 w-3.5" />
+                          Entered By
+                        </span>
+                      </th>
+                      {isAdmin && (
+                        <th className="text-left px-4 py-3 font-medium text-muted-foreground w-20" />
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredEntries.slice(0, 25).map((entry) => {
+                      const arriv = entry.arrivalTime ?? null;
+                      const depart = entry.departureTime ?? null;
+                      const hours =
+                        entry.hoursOnFarm != null
+                          ? `${entry.hoursOnFarm.toFixed(1)}h`
+                          : arriv && depart
+                            ? calcHours(arriv, depart)
+                            : "—";
+                      return (
+                        <tr
+                          key={entry.id.toString()}
+                          className="border-b border-border/50 hover:bg-muted/30"
+                        >
+                          <td className="px-4 py-3">{entry.workerName}</td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            {formatDateStr(entry.date)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge
+                              variant={
+                                entry.status === "absent"
+                                  ? "destructive"
+                                  : "default"
+                              }
+                            >
+                              {entry.status.charAt(0).toUpperCase() +
+                                entry.status.slice(1)}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            {arriv ?? "—"}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            {depart ?? "—"}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            {hours}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground whitespace-nowrap text-xs">
+                            {entry.enteredBy.toString().slice(0, 8)}…
+                          </td>
+                          {isAdmin && (
+                            <td className="px-4 py-3">
+                              <div className="flex gap-1">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7"
+                                  onClick={() => openEditDialog(entry)}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => {
+                                    setDeleteTarget(entry.id);
+                                    setDeleteKey("");
+                                    setDeleteKeyError("");
+                                  }}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
+        )
       )}
 
-      {/* Day Editor Dialog */}
+      {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              Record Day — {selectedDate ? formatDate(selectedDate) : ""}
+              {editTarget
+                ? "Edit Farm Time Entry"
+                : `Record Day — ${selectedDate ? formatDate(selectedDate) : ""}`}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            {selectedWorkerId === "all" && (
+            {!editTarget && selectedWorkerId === "all" && (
               <div className="space-y-2">
                 <Label>Worker</Label>
                 <Select
@@ -399,14 +515,83 @@ export default function FarmTimeTab() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDialogOpen(false);
+                setEditTarget(null);
+              }}
+            >
               Cancel
             </Button>
             <Button
               onClick={handleSave}
-              disabled={recordWorkerDayMutation.isPending}
+              disabled={addMutation.isPending || updateMutation.isPending}
             >
-              {recordWorkerDayMutation.isPending ? "Saving..." : "Save Record"}
+              {addMutation.isPending || updateMutation.isPending
+                ? "Saving..."
+                : "Save Record"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(v) => {
+          if (!v) {
+            setDeleteTarget(null);
+            setDeleteKey("");
+            setDeleteKeyError("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete Farm Time Entry</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              This action cannot be undone. Enter the admin deletion key to
+              confirm.
+            </p>
+            <div className="space-y-1">
+              <Label htmlFor="ft-delete-key" className="text-xs">
+                Deletion Key
+              </Label>
+              <Input
+                id="ft-delete-key"
+                type="password"
+                placeholder="Enter key"
+                value={deleteKey}
+                onChange={(e) => {
+                  setDeleteKey(e.target.value);
+                  setDeleteKeyError("");
+                }}
+              />
+              {deleteKeyError && (
+                <p className="text-xs text-destructive">{deleteKeyError}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteTarget(null);
+                setDeleteKey("");
+                setDeleteKeyError("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={deleteMutation.isPending}
+            >
+              Delete Entry
             </Button>
           </DialogFooter>
         </DialogContent>

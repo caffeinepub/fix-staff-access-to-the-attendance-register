@@ -5,25 +5,17 @@ import Order "mo:core/Order";
 import Runtime "mo:core/Runtime";
 import Principal "mo:core/Principal";
 import Nat "mo:core/Nat";
-import Text "mo:core/Text";
-import Iter "mo:core/Iter";
-import MixinAuthorization "authorization/MixinAuthorization";
-import AccessControl "authorization/access-control";
-import UserApproval "user-approval/approval";
-import Blob "mo:core/Blob";
+import Int "mo:core/Int";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor {
-  // Initialize the user system state
-  let accessControlState = AccessControl.initState();
-  include MixinAuthorization(accessControlState);
-
-  let approvalState = UserApproval.initState(accessControlState);
-
+  // ----- User Profiles -----
   public type UserProfile = {
     name : Text;
   };
 
-  // File Attachment Types
+  // ----- File Attachment Types -----
   public type FileAttachment = {
     id : Nat;
     inventoryItemId : Nat;
@@ -39,6 +31,14 @@ actor {
     mimeType : Text;
   };
 
+  // ----- Application Types -----
+  public type ItemType = {
+    #peppers;
+    #fertilizer;
+    #pesticide;
+    #equipment;
+  };
+
   public type InventoryItem = {
     id : Nat;
     name : Text;
@@ -46,148 +46,6 @@ actor {
     quantity : Nat;
     costPerUnit : Float;
     enteredBy : Text;
-  };
-
-  let userProfiles = Map.empty<Principal, UserProfile>();
-
-  // ----- Persistent State for Auto-Registered Admins -----
-  var autoRegisteredAdminCount = 0;
-  let autoRegisteredAdmins = Map.empty<Principal, ()>();
-  let adminLimit = 4;
-  var ultimateAdmin : ?Principal = null;
-
-  // Shared endpoint to initialize admin registration
-  public shared ({ caller }) func bootstrapAdminRegistration() : async () {
-    if (caller.isAnonymous()) { return };
-    if (autoRegisteredAdminCount < adminLimit and not autoRegisteredAdmins.containsKey(caller)) {
-      autoRegisteredAdmins.add(caller, ());
-      if (autoRegisteredAdminCount == 0) {
-        ultimateAdmin := ?caller;
-      };
-      autoRegisteredAdminCount += 1;
-    };
-  };
-
-  func isAdminOrAutoAdmin(caller : Principal) : Bool {
-    autoRegisteredAdmins.containsKey(caller) or AccessControl.isAdmin(accessControlState, caller);
-  };
-
-  func isUltimateAdmin(caller : Principal) : Bool {
-    switch (ultimateAdmin) {
-      case (null) { false };
-      case (?ua) { caller == ua };
-    };
-  };
-
-  public query ({ caller }) func isAutoRegisteredAdmin(principal : Principal) : async Bool {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only auto-registered admins can check admin status");
-    };
-    autoRegisteredAdmins.containsKey(principal);
-  };
-
-  public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
-      Runtime.trap("Unauthorized: Only approved users or admins can view profiles");
-    };
-    userProfiles.get(caller);
-  };
-
-  public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
-    if (caller != user and not isAdminOrAutoAdmin(caller)) {
-      Runtime.trap("Unauthorized: Can only view your own profile");
-    };
-    userProfiles.get(user);
-  };
-
-  public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
-      Runtime.trap("Unauthorized: Only approved users or admins can save profile");
-    };
-    userProfiles.add(caller, profile);
-  };
-
-  // Approval system functions
-  public query ({ caller }) func isCallerApproved() : async Bool {
-    isAdminOrAutoAdmin(caller) or UserApproval.isApproved(approvalState, caller);
-  };
-
-  public shared ({ caller }) func requestApproval() : async () {
-    if (caller.isAnonymous()) {
-      Runtime.trap("Unauthorized: Anonymous callers cannot request approval");
-    };
-    UserApproval.requestApproval(approvalState, caller);
-  };
-
-  public shared ({ caller }) func setApproval(user : Principal, status : UserApproval.ApprovalStatus) : async () {
-    if (not isAdminOrAutoAdmin(caller)) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
-    UserApproval.setApproval(approvalState, user, status);
-  };
-
-  public query ({ caller }) func listApprovals() : async [UserApproval.UserApprovalInfo] {
-    if (not isAdminOrAutoAdmin(caller)) {
-      Runtime.trap("Unauthorized: Only admins can view this");
-    };
-    UserApproval.listApprovals(approvalState);
-  };
-
-  public query ({ caller }) func listPendingUsers() : async [UserProfile] {
-    if (not isAdminOrAutoAdmin(caller)) {
-      Runtime.trap("Unauthorized: Only admins can view this");
-    };
-
-    let pendingUsers = List.empty<UserProfile>();
-
-    for (user in userProfiles.entries()) {
-      let (principal, profile) = user;
-      if (not autoRegisteredAdmins.containsKey(principal) and not AccessControl.isAdmin(accessControlState, principal)) {
-        let isApproved = UserApproval.isApproved(approvalState, principal);
-        if (not isApproved) {
-          pendingUsers.add(profile);
-        };
-      };
-    };
-    pendingUsers.toArray();
-  };
-
-  public shared ({ caller }) func approveUser(user : Principal) : async () {
-    if (not isAdminOrAutoAdmin(caller)) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
-    UserApproval.setApproval(approvalState, user, #approved);
-  };
-
-  public shared ({ caller }) func rejectUser(user : Principal) : async () {
-    if (not isAdminOrAutoAdmin(caller)) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
-    UserApproval.setApproval(approvalState, user, #rejected);
-  };
-
-  // Application Types
-  type IncomeSource = {
-    #market;
-    #wholesale;
-    #local;
-    #other;
-  };
-
-  type ExpenseType = {
-    #fertilizers;
-    #packaging;
-    #transportation;
-    #labor;
-    #equipment;
-    #other;
-  };
-
-  type ItemType = {
-    #peppers;
-    #fertilizer;
-    #pesticide;
-    #equipment;
   };
 
   public type Customer = {
@@ -198,6 +56,13 @@ actor {
     enteredBy : Text;
   };
 
+  type IncomeSource = {
+    #market;
+    #wholesale;
+    #local;
+    #other;
+  };
+
   public type IncomeRecord = {
     id : Nat;
     amount : Float;
@@ -205,6 +70,15 @@ actor {
     source : IncomeSource;
     description : Text;
     enteredBy : Text;
+  };
+
+  type ExpenseType = {
+    #fertilizers;
+    #packaging;
+    #transportation;
+    #labor;
+    #equipment;
+    #other;
   };
 
   public type ExpenseRecord = {
@@ -226,7 +100,6 @@ actor {
     enteredBy : Text;
   };
 
-  // Worker Month Calendar Types
   public type Worker = {
     id : Nat;
     name : Text;
@@ -244,7 +117,6 @@ actor {
     enteredBy : Text;
   };
 
-  // Old Attendance Types
   public type AttendanceRecord = {
     id : Nat;
     workerId : Nat;
@@ -252,29 +124,6 @@ actor {
     status : { #present; #absent; #late; #onLeave };
   };
 
-  var nextAttendanceId = 1;
-  let attendanceRecords = Map.empty<Nat, AttendanceRecord>();
-
-  var nextInventoryItemId = 1;
-  var nextCustomerId = 1;
-  var nextIncomeId = 1;
-  var nextExpenseId = 1;
-  var nextSaleId = 1;
-  var nextWorkerId = 1;
-  var nextFileAttachmentId = 1;
-
-  let inventory = Map.empty<Nat, InventoryItem>();
-  let customers = Map.empty<Nat, Customer>();
-  let incomeRecords = Map.empty<Nat, IncomeRecord>();
-  let expenseRecords = Map.empty<Nat, ExpenseRecord>();
-  let sales = Map.empty<Nat, Sale>();
-  let workers = Map.empty<Nat, Worker>();
-  let fileAttachments = Map.empty<Nat, FileAttachment>();
-
-  // Worker Farm Time Calendar
-  let workerDailyRecords = Map.empty<Nat, WorkerDailyRecord>();
-
-  // Department Leads and Monthly Plot Goals
   public type Department = {
     name : Text;
     leadName : Text;
@@ -305,7 +154,72 @@ actor {
     planForNextWeek : Text;
   };
 
+  // ----- Harvest Log Types -----
+  public type HarvestEntry = {
+    id : Nat;
+    date : Text;
+    quantityKg : Float;
+    harvestedBy : Text;
+    plotLocation : Text;
+    notes : Text;
+    enteredBy : Principal;
+    timestamp : Int;
+  };
+
+  // ----- Farm Time Types -----
+  public type FarmTimeEntry = {
+    id : Nat;
+    workerId : Nat;
+    workerName : Text;
+    date : Text;
+    arrivalTime : ?Text;
+    departureTime : ?Text;
+    status : Text;
+    hoursOnFarm : ?Float;
+    enteredBy : Principal;
+    timestamp : Int;
+  };
+
+  // ----- Approval Types -----
+  public type ApprovalStatus = { #pending; #approved; #rejected };
+  public type UserApprovalInfo = { principal : Principal; status : ApprovalStatus };
+
+  // ----- State -----
+  let userProfiles = Map.empty<Principal, UserProfile>();
+
+  // First 4 users become admins; first user is ultimate admin
+  var autoRegisteredAdminCount = 0;
+  let autoRegisteredAdmins = Map.empty<Principal, ()>();
+  let adminLimit = 4;
+  var ultimateAdmin : ?Principal = null;
+
+  // Approval state
+  let approvalMap = Map.empty<Principal, ApprovalStatus>();
+
+  var nextAttendanceId = 1;
+  let attendanceRecords = Map.empty<Nat, AttendanceRecord>();
+
+  var nextInventoryItemId = 1;
+  var nextCustomerId = 1;
+  var nextIncomeId = 1;
+  var nextExpenseId = 1;
+  var nextSaleId = 1;
+  var nextWorkerId = 1;
+  var nextFileAttachmentId = 1;
+  var nextHarvestEntryId = 1;
+  var nextFarmTimeEntryId = 1;
   var nextMonthlyGoalId = 1;
+
+  let inventory = Map.empty<Nat, InventoryItem>();
+  let customers = Map.empty<Nat, Customer>();
+  let incomeRecords = Map.empty<Nat, IncomeRecord>();
+  let expenseRecords = Map.empty<Nat, ExpenseRecord>();
+  let sales = Map.empty<Nat, Sale>();
+  let workers = Map.empty<Nat, Worker>();
+  let fileAttachments = Map.empty<Nat, FileAttachment>();
+  let workerDailyRecords = Map.empty<Nat, WorkerDailyRecord>();
+  let harvestEntries = Map.empty<Nat, HarvestEntry>();
+  let farmTimeEntries = Map.empty<Nat, FarmTimeEntry>();
 
   let monthlyGoals = Map.empty<Nat, {
     id : Nat;
@@ -318,6 +232,7 @@ actor {
 
   let weeklyReports = List.empty<WeeklyReport>();
 
+  // ----- Sort modules -----
   module InventoryItem {
     public func compare(a : InventoryItem, b : InventoryItem) : Order.Order {
       Nat.compare(a.id, b.id);
@@ -354,6 +269,34 @@ actor {
     };
   };
 
+  module HarvestEntry {
+    public func compare(a : HarvestEntry, b : HarvestEntry) : Order.Order {
+      Nat.compare(a.id, b.id);
+    };
+  };
+
+  module FarmTimeEntry {
+    public func compare(a : FarmTimeEntry, b : FarmTimeEntry) : Order.Order {
+      Nat.compare(a.id, b.id);
+    };
+  };
+
+  // ----- Auth Helpers -----
+  func isAdmin(caller : Principal) : Bool {
+    autoRegisteredAdmins.containsKey(caller);
+  };
+
+  func isApproved(caller : Principal) : Bool {
+    switch (approvalMap.get(caller)) {
+      case (? #approved) { true };
+      case _ { false };
+    };
+  };
+
+  func isApprovedOrAdmin(caller : Principal) : Bool {
+    isAdmin(caller) or isApproved(caller);
+  };
+
   func getCallerNameOrPrincipal(caller : Principal) : Text {
     switch (userProfiles.get(caller)) {
       case (null) { caller.toText() };
@@ -361,46 +304,139 @@ actor {
     };
   };
 
+  // ----- Admin Bootstrap -----
+  public shared ({ caller }) func bootstrapAdminRegistration() : async () {
+    if (caller.isAnonymous()) { return };
+    if (autoRegisteredAdminCount < adminLimit and not autoRegisteredAdmins.containsKey(caller)) {
+      autoRegisteredAdmins.add(caller, ());
+      if (autoRegisteredAdminCount == 0) {
+        ultimateAdmin := ?caller;
+      };
+      autoRegisteredAdminCount += 1;
+      // Auto-approve admins
+      approvalMap.add(caller, #approved);
+    };
+  };
+
+  public query ({ caller }) func isAutoRegisteredAdmin(principal : Principal) : async Bool {
+    if (not isApprovedOrAdmin(caller)) {
+      Runtime.trap("Unauthorized");
+    };
+    autoRegisteredAdmins.containsKey(principal);
+  };
+
+  // ----- User Profiles -----
+  public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
+    if (not isApprovedOrAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only approved users or admins can view profiles");
+    };
+    userProfiles.get(caller);
+  };
+
+  public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
+    if (not Principal.equal(caller, user) and not isAdmin(caller)) {
+      Runtime.trap("Unauthorized: Can only view your own profile");
+    };
+    userProfiles.get(user);
+  };
+
+  public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
+    if (not isApprovedOrAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only approved users or admins can save profile");
+    };
+    userProfiles.add(caller, profile);
+  };
+
+  // ----- Approval System -----
+  public query ({ caller }) func isCallerApproved() : async Bool {
+    isApprovedOrAdmin(caller);
+  };
+
+  public shared ({ caller }) func requestApproval() : async () {
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous callers cannot request approval");
+    };
+    switch (approvalMap.get(caller)) {
+      case (null) { approvalMap.add(caller, #pending) };
+      case (?_) {};
+    };
+  };
+
+  public shared ({ caller }) func setApproval(user : Principal, status : ApprovalStatus) : async () {
+    if (not isAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+    approvalMap.add(user, status);
+  };
+
+  public query ({ caller }) func listApprovals() : async [UserApprovalInfo] {
+    if (not isAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only admins can view this");
+    };
+    let result = List.empty<UserApprovalInfo>();
+    for ((principal, status) in approvalMap.entries()) {
+      result.add({ principal; status });
+    };
+    result.toArray();
+  };
+
+  public query ({ caller }) func listPendingUsers() : async [UserProfile] {
+    if (not isAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only admins can view this");
+    };
+    let pendingUsers = List.empty<UserProfile>();
+    for ((principal, profile) in userProfiles.entries()) {
+      if (not autoRegisteredAdmins.containsKey(principal)) {
+        switch (approvalMap.get(principal)) {
+          case (? #approved) {};
+          case _ {
+            pendingUsers.add(profile);
+          };
+        };
+      };
+    };
+    pendingUsers.toArray();
+  };
+
+  public shared ({ caller }) func approveUser(user : Principal) : async () {
+    if (not isAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+    approvalMap.add(user, #approved);
+  };
+
+  public shared ({ caller }) func rejectUser(user : Principal) : async () {
+    if (not isAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+    approvalMap.add(user, #rejected);
+  };
+
+  // ----- Inventory -----
   public shared ({ caller }) func addInventoryItem(name : Text, itemType : ItemType, quantity : Nat, costPerUnit : Float) : async Nat {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can add inventory items");
     };
     let id = nextInventoryItemId;
     nextInventoryItemId += 1;
-    let item : InventoryItem = {
-      id;
-      name;
-      itemType;
-      quantity;
-      costPerUnit;
-      enteredBy = getCallerNameOrPrincipal(caller);
-    };
-    inventory.add(id, item);
+    inventory.add(id, { id; name; itemType; quantity; costPerUnit; enteredBy = getCallerNameOrPrincipal(caller) });
     id;
   };
 
   public shared ({ caller }) func updateInventoryItem(id : Nat, name : Text, itemType : ItemType, quantity : Nat, costPerUnit : Float) : async () {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can update inventory items");
     };
     switch (inventory.get(id)) {
       case (null) { Runtime.trap("Inventory item not found") };
       case (?_) {
-        let item : InventoryItem = {
-          id;
-          name;
-          itemType;
-          quantity;
-          costPerUnit;
-          enteredBy = getCallerNameOrPrincipal(caller);
-        };
-        inventory.add(id, item);
+        inventory.add(id, { id; name; itemType; quantity; costPerUnit; enteredBy = getCallerNameOrPrincipal(caller) });
       };
     };
   };
 
   public shared ({ caller }) func deleteInventoryItem(id : Nat) : async () {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can delete inventory items");
     };
     switch (inventory.get(id)) {
@@ -409,44 +445,38 @@ actor {
     };
   };
 
+  public query ({ caller }) func getInventoryItems() : async [InventoryItem] {
+    if (not isApprovedOrAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only approved users or admins can view inventory");
+    };
+    inventory.values().toList<InventoryItem>().toArray().sort();
+  };
+
+  // ----- Customers -----
   public shared ({ caller }) func addCustomer(name : Text, contactDetails : Text, customerType : Text) : async Nat {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can add customers");
     };
     let id = nextCustomerId;
     nextCustomerId += 1;
-    let customer : Customer = {
-      id;
-      name;
-      contactDetails;
-      customerType;
-      enteredBy = getCallerNameOrPrincipal(caller);
-    };
-    customers.add(id, customer);
+    customers.add(id, { id; name; contactDetails; customerType; enteredBy = getCallerNameOrPrincipal(caller) });
     id;
   };
 
   public shared ({ caller }) func updateCustomer(id : Nat, name : Text, contactDetails : Text, customerType : Text) : async () {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can update customers");
     };
     switch (customers.get(id)) {
       case (null) { Runtime.trap("Customer not found") };
       case (?existing) {
-        let updated : Customer = {
-          id;
-          name;
-          contactDetails;
-          customerType;
-          enteredBy = existing.enteredBy;
-        };
-        customers.add(id, updated);
+        customers.add(id, { id; name; contactDetails; customerType; enteredBy = existing.enteredBy });
       };
     };
   };
 
   public shared ({ caller }) func deleteCustomer(id : Nat) : async () {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can delete customers");
     };
     switch (customers.get(id)) {
@@ -455,47 +485,38 @@ actor {
     };
   };
 
+  public query ({ caller }) func getCustomers() : async [Customer] {
+    if (not isApprovedOrAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only approved users or admins can view customers");
+    };
+    customers.values().toList<Customer>().toArray().sort();
+  };
+
+  // ----- Income -----
   public shared ({ caller }) func addIncome(amount : Float, date : Time.Time, source : IncomeSource, description : Text) : async Nat {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can add income records");
     };
-
     let id = nextIncomeId;
     nextIncomeId += 1;
-    let record : IncomeRecord = {
-      id;
-      amount;
-      date;
-      source;
-      description;
-      enteredBy = getCallerNameOrPrincipal(caller);
-    };
-    incomeRecords.add(id, record);
+    incomeRecords.add(id, { id; amount; date; source; description; enteredBy = getCallerNameOrPrincipal(caller) });
     id;
   };
 
   public shared ({ caller }) func updateIncome(id : Nat, amount : Float, date : Time.Time, source : IncomeSource, description : Text) : async () {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can update income records");
     };
     switch (incomeRecords.get(id)) {
       case (null) { Runtime.trap("Income record not found") };
       case (?existing) {
-        let updated : IncomeRecord = {
-          id;
-          amount;
-          date;
-          source;
-          description;
-          enteredBy = existing.enteredBy;
-        };
-        incomeRecords.add(id, updated);
+        incomeRecords.add(id, { id; amount; date; source; description; enteredBy = existing.enteredBy });
       };
     };
   };
 
   public shared ({ caller }) func deleteIncome(id : Nat) : async () {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can delete income records");
     };
     switch (incomeRecords.get(id)) {
@@ -504,117 +525,83 @@ actor {
     };
   };
 
+  public query ({ caller }) func getIncomeRecords() : async [IncomeRecord] {
+    if (not isApprovedOrAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only approved users or admins can view income records");
+    };
+    incomeRecords.values().toList<IncomeRecord>().toArray().sort();
+  };
+
+  // ----- Expenses -----
   public shared ({ caller }) func addExpense(amount : Float, date : Time.Time, category : ExpenseType, description : Text) : async Nat {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can add expense records");
     };
     let id = nextExpenseId;
     nextExpenseId += 1;
-    let record : ExpenseRecord = {
-      id;
-      amount;
-      date;
-      category;
-      description;
-      enteredBy = getCallerNameOrPrincipal(caller);
-    };
-    expenseRecords.add(id, record);
+    expenseRecords.add(id, { id; amount; date; category; description; enteredBy = getCallerNameOrPrincipal(caller) });
     id;
   };
 
   public shared ({ caller }) func updateExpense(id : Nat, amount : Float, date : Time.Time, category : ExpenseType, description : Text) : async () {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can update expense records");
     };
     switch (expenseRecords.get(id)) {
       case (null) { Runtime.trap("Expense record not found") };
       case (?_) {
-        let updatedExpense : ExpenseRecord = {
-          id;
-          amount;
-          date;
-          category;
-          description;
-          enteredBy = getCallerNameOrPrincipal(caller);
-        };
-        expenseRecords.add(id, updatedExpense);
+        expenseRecords.add(id, { id; amount; date; category; description; enteredBy = getCallerNameOrPrincipal(caller) });
       };
     };
   };
 
   public shared ({ caller }) func deleteExpense(id : Nat) : async () {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can delete expense records");
     };
     switch (expenseRecords.get(id)) {
       case (null) { Runtime.trap("Expense record not found") };
-      case (?_) {
-        expenseRecords.remove(id);
-      };
+      case (?_) { expenseRecords.remove(id) };
     };
   };
 
+  public query ({ caller }) func getExpenseRecords() : async [ExpenseRecord] {
+    if (not isApprovedOrAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only approved users or admins can view expense records");
+    };
+    expenseRecords.values().toList<ExpenseRecord>().toArray().sort();
+  };
+
+  // ----- Sales -----
   public shared ({ caller }) func addSale(customerId : Nat, inventoryItemId : Nat, quantity : Nat, unitPrice : Float) : async Nat {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can add sales");
     };
-
     let item = switch (inventory.get(inventoryItemId)) {
       case (null) { Runtime.trap("Inventory item not found") };
       case (?item) { item };
     };
-
     if (item.quantity < quantity) {
       Runtime.trap("Not enough inventory for sale");
     };
-
     let id = nextSaleId;
     nextSaleId += 1;
-
-    let sale : Sale = {
-      id;
-      date = Time.now();
-      customerId;
-      inventoryItemId;
-      quantity;
-      unitPrice;
-      enteredBy = getCallerNameOrPrincipal(caller);
-    };
-    sales.add(id, sale);
-
-    let updatedItem : InventoryItem = {
-      id = item.id;
-      name = item.name;
-      itemType = item.itemType;
-      quantity = item.quantity - quantity;
-      costPerUnit = item.costPerUnit;
-      enteredBy = item.enteredBy;
-    };
-    inventory.add(item.id, updatedItem);
-
+    sales.add(id, { id; date = Time.now(); customerId; inventoryItemId; quantity; unitPrice; enteredBy = getCallerNameOrPrincipal(caller) });
+    inventory.add(item.id, { item with quantity = item.quantity - quantity });
     id;
   };
 
   public shared ({ caller }) func deleteSale(id : Nat) : async () {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can delete sales");
     };
     switch (sales.get(id)) {
       case (null) { Runtime.trap("Sale not found") };
       case (?sale) {
-        // Restore inventory quantity
         switch (inventory.get(sale.inventoryItemId)) {
           case (null) {};
           case (?item) {
-            let restoredItem : InventoryItem = {
-              id = item.id;
-              name = item.name;
-              itemType = item.itemType;
-              quantity = item.quantity + sale.quantity;
-              costPerUnit = item.costPerUnit;
-              enteredBy = item.enteredBy;
-            };
-            inventory.add(item.id, restoredItem);
+            inventory.add(item.id, { item with quantity = item.quantity + sale.quantity });
           };
         };
         sales.remove(id);
@@ -622,43 +609,15 @@ actor {
     };
   };
 
-  public query ({ caller }) func getInventoryItems() : async [InventoryItem] {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
-      Runtime.trap("Unauthorized: Only approved users or admins can view inventory");
-    };
-    inventory.values().toList<InventoryItem>().toArray().sort();
-  };
-
-  public query ({ caller }) func getCustomers() : async [Customer] {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
-      Runtime.trap("Unauthorized: Only approved users or admins can view customers");
-    };
-    customers.values().toList<Customer>().toArray().sort();
-  };
-
-  public query ({ caller }) func getIncomeRecords() : async [IncomeRecord] {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
-      Runtime.trap("Unauthorized: Only approved users or admins can view income records");
-    };
-    incomeRecords.values().toList<IncomeRecord>().toArray().sort();
-  };
-
-  public query ({ caller }) func getExpenseRecords() : async [ExpenseRecord] {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
-      Runtime.trap("Unauthorized: Only approved users or admins can view expense records");
-    };
-    expenseRecords.values().toList<ExpenseRecord>().toArray().sort();
-  };
-
   public query ({ caller }) func getSales() : async [Sale] {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
+    if (not isApprovedOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only approved users or admins can view sales");
     };
     sales.values().toList<Sale>().toArray().sort();
   };
 
   public query ({ caller }) func getCustomerPurchaseHistory(customerId : Nat) : async [Sale] {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
+    if (not isApprovedOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only approved users or admins can view customer purchase history");
     };
     let filteredSales = List.empty<Sale>();
@@ -670,44 +629,31 @@ actor {
     filteredSales.toArray();
   };
 
-  // Worker Farm Time Calendar
-
+  // ----- Workers -----
   public shared ({ caller }) func addWorker(name : Text, role : Text) : async Nat {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can add workers");
     };
     let id = nextWorkerId;
     nextWorkerId += 1;
-    let worker : Worker = {
-      id;
-      name;
-      role;
-      enteredBy = getCallerNameOrPrincipal(caller);
-    };
-    workers.add(id, worker);
+    workers.add(id, { id; name; role; enteredBy = getCallerNameOrPrincipal(caller) });
     id;
   };
 
   public shared ({ caller }) func updateWorker(id : Nat, name : Text, role : Text) : async () {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can update workers");
     };
     switch (workers.get(id)) {
       case (null) { Runtime.trap("Worker not found") };
       case (?existing) {
-        let updated : Worker = {
-          id;
-          name;
-          role;
-          enteredBy = existing.enteredBy;
-        };
-        workers.add(id, updated);
+        workers.add(id, { id; name; role; enteredBy = existing.enteredBy });
       };
     };
   };
 
   public shared ({ caller }) func deleteWorker(id : Nat) : async () {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can delete workers");
     };
     switch (workers.get(id)) {
@@ -717,43 +663,37 @@ actor {
   };
 
   public query ({ caller }) func getWorkers() : async [Worker] {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
+    if (not isApprovedOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only approved users or admins can view workers");
     };
     workers.values().toList<Worker>().toArray().sort();
   };
 
   public shared ({ caller }) func recordWorkerDay(workerId : Nat, date : Time.Time, present : Bool, arrivalTime : ?Time.Time, departureTime : ?Time.Time) : async () {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can record worker day");
     };
-
     switch (workers.get(workerId)) {
       case (null) { Runtime.trap("Worker not found") };
       case (?_) {
-        let dailyRecord : WorkerDailyRecord = {
-          workerId;
-          date;
-          present;
-          arrivalTime;
-          departureTime;
+        workerDailyRecords.add(workerId, {
+          workerId; date; present; arrivalTime; departureTime;
           timeOnFarm = calculateTimeOnFarm(arrivalTime, departureTime);
           enteredBy = getCallerNameOrPrincipal(caller);
-        };
-        workerDailyRecords.add(workerId, dailyRecord);
+        });
       };
     };
   };
 
   public query ({ caller }) func getWorkerDailyRecords() : async [WorkerDailyRecord] {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
+    if (not isApprovedOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only approved users or admins can view worker records");
     };
     workerDailyRecords.values().toList<WorkerDailyRecord>().toArray();
   };
 
   public query ({ caller }) func getWorkerDailyRecordsByWorker(workerId : Nat) : async [WorkerDailyRecord] {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
+    if (not isApprovedOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only approved users or admins can view worker records");
     };
     let filteredRecords = List.empty<WorkerDailyRecord>();
@@ -770,249 +710,150 @@ actor {
       case (null, _) { null };
       case (_, null) { null };
       case (?arrival, ?departure) {
-        if (departure > arrival) {
-          ?(departure - arrival);
-        } else {
-          null;
-        };
+        if (departure > arrival) { ?(departure - arrival) } else { null };
       };
     };
   };
 
+  // ----- Departments -----
   let departments = List.fromArray<Department>([
-    {
-      name = "Goodnews";
-      leadName = "Goodnews";
-      description = "Nursery Management & Chemical/Fertilizer Application";
-    },
-    {
-      name = "Nicholas";
-      leadName = "Nicholas";
-      description = "Irrigation & Watering";
-    },
-    {
-      name = "Elvis";
-      leadName = "Elvis";
-      description = "Weeding & Harvesting";
-    },
-    {
-      name = "Wisdom";
-      leadName = "Wisdom";
-      description = "Land Preparation, Farm Expansion & Infrastructure Projects";
-    },
+    { name = "Goodnews"; leadName = "Goodnews"; description = "Nursery Management & Chemical/Fertilizer Application" },
+    { name = "Nicholas"; leadName = "Nicholas"; description = "Irrigation & Watering" },
+    { name = "Elvis"; leadName = "Elvis"; description = "Weeding & Harvesting" },
+    { name = "Wisdom"; leadName = "Wisdom"; description = "Land Preparation, Farm Expansion & Infrastructure Projects" },
   ]);
 
   public query ({ caller }) func getDepartments() : async [Department] {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
+    if (not isApprovedOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only approved users or admins can view departments");
     };
     departments.toArray();
   };
 
+  // ----- Monthly Goals -----
   public shared ({ caller }) func addMonthlyGoal(year : Nat, month : Nat, targetPlots : Nat) : async Nat {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can add monthly goals");
     };
-
     let id = nextMonthlyGoalId;
     nextMonthlyGoalId += 1;
-
-    let newGoal = {
-      id;
-      year;
-      month;
-      targetPlots;
-      actualPlots = 0;
-      plotEntries = List.empty<PlotEntry>();
-    };
-    monthlyGoals.add(id, newGoal);
-
+    monthlyGoals.add(id, { id; year; month; targetPlots; actualPlots = 0; plotEntries = List.empty<PlotEntry>() });
     id;
   };
 
   public shared ({ caller }) func addPlotEntry(monthlyGoalId : Nat, plotName : Text, dateActivated : Time.Time, department : Text) : async () {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can add plot entries");
     };
-
     switch (monthlyGoals.get(monthlyGoalId)) {
       case (null) { Runtime.trap("Monthly goal not found") };
       case (?goal) {
         let plotEntries = goal.plotEntries;
-        let newPlotEntry = {
-          plotName;
-          dateActivated;
-          department;
-        };
-        plotEntries.add(newPlotEntry);
-
-        let updatedGoal = {
-          id = goal.id;
-          year = goal.year;
-          month = goal.month;
-          targetPlots = goal.targetPlots;
-          actualPlots = plotEntries.size();
-          plotEntries;
-        };
-        monthlyGoals.add(monthlyGoalId, updatedGoal);
+        plotEntries.add({ plotName; dateActivated; department });
+        monthlyGoals.add(monthlyGoalId, { goal with actualPlots = plotEntries.size(); plotEntries });
       };
     };
   };
 
-  func convertMonthlyGoalToImmutable(monthlyGoal : { id : Nat; year : Nat; month : Nat; targetPlots : Nat; actualPlots : Nat; plotEntries : List.List<PlotEntry> }) : MonthlyGoal {
-    {
-      id = monthlyGoal.id;
-      year = monthlyGoal.year;
-      month = monthlyGoal.month;
-      targetPlots = monthlyGoal.targetPlots;
-      actualPlots = monthlyGoal.actualPlots;
-      plotEntries = monthlyGoal.plotEntries.toArray();
-    };
+  func convertMonthlyGoalToImmutable(goal : { id : Nat; year : Nat; month : Nat; targetPlots : Nat; actualPlots : Nat; plotEntries : List.List<PlotEntry> }) : MonthlyGoal {
+    { id = goal.id; year = goal.year; month = goal.month; targetPlots = goal.targetPlots; actualPlots = goal.actualPlots; plotEntries = goal.plotEntries.toArray() };
   };
 
   public query ({ caller }) func getMonthlyGoals() : async [MonthlyGoal] {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
+    if (not isApprovedOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only approved users or admins can view monthly goals");
     };
     monthlyGoals.values().toList<{ id : Nat; year : Nat; month : Nat; targetPlots : Nat; actualPlots : Nat; plotEntries : List.List<PlotEntry> }>().toArray().map(convertMonthlyGoalToImmutable);
   };
 
   public query ({ caller }) func getMonthlyGoal(id : Nat) : async ?MonthlyGoal {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
+    if (not isApprovedOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only approved users or admins can view monthly goals");
     };
     switch (monthlyGoals.get(id)) {
       case (null) { null };
-      case (?goal) {
-        ?convertMonthlyGoalToImmutable(goal);
-      };
+      case (?goal) { ?convertMonthlyGoalToImmutable(goal) };
     };
   };
 
+  public shared ({ caller }) func initializeFixedMonthlyGoals() : async () {
+    if (not isAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only admins can initialize fixed monthly goals");
+    };
+    for (month in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].values()) {
+      monthlyGoals.add(nextMonthlyGoalId, { id = nextMonthlyGoalId; year = 2024; month; targetPlots = 2; actualPlots = 0; plotEntries = List.empty<PlotEntry>() });
+      nextMonthlyGoalId += 1;
+    };
+  };
+
+  // ----- Weekly Reports -----
   public shared ({ caller }) func submitWeeklyReport(departmentLead : Text, departmentName : Text, weekEnding : Time.Time, achievements : Text, challenges : Text, planForNextWeek : Text) : async () {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
+    if (not isApprovedOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only approved users or admins can submit weekly reports");
     };
-
-    let newReport : WeeklyReport = {
-      departmentLead;
-      departmentName;
-      weekEnding;
-      achievements;
-      challenges;
-      planForNextWeek;
-    };
-    weeklyReports.add(newReport);
+    weeklyReports.add({ departmentLead; departmentName; weekEnding; achievements; challenges; planForNextWeek });
   };
 
   public query ({ caller }) func getWeeklyReports() : async [WeeklyReport] {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
+    if (not isApprovedOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only approved users or admins can view weekly reports");
     };
     weeklyReports.toArray();
   };
 
   public query ({ caller }) func getWeeklyReportsByDepartment(departmentName : Text) : async [WeeklyReport] {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
+    if (not isApprovedOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only approved users or admins can view weekly reports");
     };
-
-    let filteredReports = weeklyReports.filter(func(report) { report.departmentName == departmentName });
-    filteredReports.toArray();
+    weeklyReports.filter(func(report) { report.departmentName == departmentName }).toArray();
   };
 
   public query ({ caller }) func getWeeklyReportsByDateRange(startDate : Time.Time, endDate : Time.Time) : async [WeeklyReport] {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
+    if (not isApprovedOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only approved users or admins can view weekly reports");
     };
-
-    let filteredReports = weeklyReports.filter(
-      func(report) {
-        report.weekEnding >= startDate and report.weekEnding <= endDate
-      }
-    );
-    filteredReports.toArray();
+    weeklyReports.filter(func(report) { report.weekEnding >= startDate and report.weekEnding <= endDate }).toArray();
   };
 
-  public shared ({ caller }) func initializeFixedMonthlyGoals() : async () {
-    if (not isAdminOrAutoAdmin(caller)) {
-      Runtime.trap("Unauthorized: Only admins can initialize fixed monthly goals");
-    };
-
-    let months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-
-    for (month in months.values()) {
-      let monthlyGoal = {
-        id = nextMonthlyGoalId;
-        year = 2024;
-        month;
-        targetPlots = 2;
-        actualPlots = 0;
-        plotEntries = List.empty<PlotEntry>();
-      };
-      monthlyGoals.add(nextMonthlyGoalId, monthlyGoal);
-      nextMonthlyGoalId += 1;
-    };
-  };
-
-  // ---- File Attachment Functions (per inventory item) ----
-
+  // ----- File Attachments -----
   public shared ({ caller }) func uploadAttachmentToItem(inventoryItemId : Nat, filename : Text, mimeType : Text, content : Blob) : async Nat {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can upload file attachments");
     };
-
     switch (inventory.get(inventoryItemId)) {
       case (null) { Runtime.trap("Inventory item not found") };
       case (?_) {};
     };
-
     let id = nextFileAttachmentId;
     nextFileAttachmentId += 1;
-
-    let attachment : FileAttachment = {
-      id;
-      inventoryItemId;
-      filename;
-      mimeType;
-      content;
-    };
-
-    fileAttachments.add(id, attachment);
+    fileAttachments.add(id, { id; inventoryItemId; filename; mimeType; content });
     id;
   };
 
   public query ({ caller }) func getAttachmentsForItem(inventoryItemId : Nat) : async [FileAttachmentMetadata] {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
+    if (not isApprovedOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only approved users or admins can view file attachments");
     };
-
     let result = List.empty<FileAttachmentMetadata>();
     for (att in fileAttachments.values()) {
       if (att.inventoryItemId == inventoryItemId) {
-        result.add({
-          id = att.id;
-          inventoryItemId = att.inventoryItemId;
-          filename = att.filename;
-          mimeType = att.mimeType;
-        });
+        result.add({ id = att.id; inventoryItemId = att.inventoryItemId; filename = att.filename; mimeType = att.mimeType });
       };
     };
     result.toArray();
   };
 
   public query ({ caller }) func getAttachment(id : Nat) : async ?FileAttachment {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
+    if (not isApprovedOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only approved users or admins can retrieve file attachments");
     };
     fileAttachments.get(id);
   };
 
   public shared ({ caller }) func deleteAttachment(id : Nat) : async () {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can delete file attachments");
     };
-
     if (not fileAttachments.containsKey(id)) {
       Runtime.trap("File attachment not found");
     };
@@ -1020,56 +861,168 @@ actor {
   };
 
   public shared ({ caller }) func uploadFileAttachment(filename : Text, mimeType : Text, content : Blob) : async Nat {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can upload file attachments");
     };
-
     let id = nextFileAttachmentId;
     nextFileAttachmentId += 1;
-
-    let attachment : FileAttachment = {
-      id;
-      inventoryItemId = 0;
-      filename;
-      mimeType;
-      content;
-    };
-
-    fileAttachments.add(id, attachment);
+    fileAttachments.add(id, { id; inventoryItemId = 0; filename; mimeType; content });
     id;
   };
 
   public query ({ caller }) func getFileAttachmentMetadata() : async [FileAttachmentMetadata] {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
+    if (not isApprovedOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only approved users or admins can view file attachments");
     };
     fileAttachments.values().toList<FileAttachment>().toArray().map(
-      func(att) : FileAttachmentMetadata {
-        {
-          id = att.id;
-          inventoryItemId = att.inventoryItemId;
-          filename = att.filename;
-          mimeType = att.mimeType;
-        };
+      func(att : FileAttachment) : FileAttachmentMetadata {
+        { id = att.id; inventoryItemId = att.inventoryItemId; filename = att.filename; mimeType = att.mimeType };
       }
     );
   };
 
   public query ({ caller }) func getFileAttachment(id : Nat) : async ?FileAttachment {
-    if (not (UserApproval.isApproved(approvalState, caller) or isAdminOrAutoAdmin(caller))) {
+    if (not isApprovedOrAdmin(caller)) {
       Runtime.trap("Unauthorized: Only approved users or admins can retrieve file attachments");
     };
     fileAttachments.get(id);
   };
 
   public shared ({ caller }) func deleteFileAttachment(id : Nat) : async () {
-    if (not isAdminOrAutoAdmin(caller)) {
+    if (not isAdmin(caller)) {
       Runtime.trap("Unauthorized: Only admins can delete file attachments");
     };
-
     if (not fileAttachments.containsKey(id)) {
       Runtime.trap("File attachment not found");
     };
     fileAttachments.remove(id);
+  };
+
+  // ----- Harvest Log -----
+  public shared ({ caller }) func addHarvestEntry(date : Text, quantityKg : Float, harvestedBy : Text, plotLocation : Text, notes : Text) : async HarvestEntry {
+    if (not isAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only admins can add harvest entries");
+    };
+    let id = nextHarvestEntryId;
+    nextHarvestEntryId += 1;
+    let entry : HarvestEntry = { id; date; quantityKg; harvestedBy; plotLocation; notes; enteredBy = caller; timestamp = Time.now() };
+    harvestEntries.add(id, entry);
+    entry;
+  };
+
+  public shared ({ caller }) func updateHarvestEntry(id : Nat, date : Text, quantityKg : Float, harvestedBy : Text, plotLocation : Text, notes : Text) : async ?HarvestEntry {
+    if (not isAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only admins can update harvest entries");
+    };
+    switch (harvestEntries.get(id)) {
+      case (null) { null };
+      case (?existing) {
+        let updated : HarvestEntry = { existing with date; quantityKg; harvestedBy; plotLocation; notes };
+        harvestEntries.add(id, updated);
+        ?updated;
+      };
+    };
+  };
+
+  public shared ({ caller }) func deleteHarvestEntry(id : Nat) : async Bool {
+    if (not isAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only admins can delete harvest entries");
+    };
+    if (harvestEntries.containsKey(id)) {
+      harvestEntries.remove(id);
+      true;
+    } else {
+      false;
+    };
+  };
+
+  public query ({ caller }) func getHarvestEntries() : async [HarvestEntry] {
+    if (not isApprovedOrAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only approved users or admins can view harvest entries");
+    };
+    harvestEntries.values().toList<HarvestEntry>().toArray().sort();
+  };
+
+  // ----- Farm Time -----
+  func computeHoursOnFarm(arrivalTime : ?Text, departureTime : ?Text) : ?Float {
+    switch (arrivalTime, departureTime) {
+      case (?arr, ?dep) {
+        let arrParts = arr.split(#char ':').toList().toArray();
+        let depParts = dep.split(#char ':').toList().toArray();
+        if (arrParts.size() == 2 and depParts.size() == 2) {
+          switch (Nat.fromText(arrParts[0]), Nat.fromText(arrParts[1]), Nat.fromText(depParts[0]), Nat.fromText(depParts[1])) {
+            case (?ah, ?am, ?dh, ?dm) {
+              let arrMins : Int = ah * 60 + am;
+              let depMins : Int = dh * 60 + dm;
+              let diffMins = depMins - arrMins;
+              if (diffMins > 0) {
+                ?(diffMins.toFloat() / 60.0);
+              } else { null };
+            };
+            case _ { null };
+          };
+        } else { null };
+      };
+      case _ { null };
+    };
+  };
+
+  public shared ({ caller }) func addFarmTimeEntry(workerId : Nat, workerName : Text, date : Text, arrivalTime : ?Text, departureTime : ?Text, status : Text) : async FarmTimeEntry {
+    let id = nextFarmTimeEntryId;
+    nextFarmTimeEntryId += 1;
+    let entry : FarmTimeEntry = {
+      id; workerId; workerName; date; arrivalTime; departureTime; status;
+      hoursOnFarm = computeHoursOnFarm(arrivalTime, departureTime);
+      enteredBy = caller;
+      timestamp = Time.now();
+    };
+    farmTimeEntries.add(id, entry);
+    entry;
+  };
+
+  public shared ({ caller }) func updateFarmTimeEntry(id : Nat, arrivalTime : ?Text, departureTime : ?Text, status : Text) : async ?FarmTimeEntry {
+    switch (farmTimeEntries.get(id)) {
+      case (null) { null };
+      case (?existing) {
+        let updated : FarmTimeEntry = {
+          existing with arrivalTime; departureTime; status;
+          hoursOnFarm = computeHoursOnFarm(arrivalTime, departureTime);
+        };
+        farmTimeEntries.add(id, updated);
+        ?updated;
+      };
+    };
+  };
+
+  public shared ({ caller }) func deleteFarmTimeEntry(id : Nat) : async Bool {
+    if (not isAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only admins can delete farm time entries");
+    };
+    if (farmTimeEntries.containsKey(id)) {
+      farmTimeEntries.remove(id);
+      true;
+    } else {
+      false;
+    };
+  };
+
+  public query ({ caller }) func getFarmTimeEntries() : async [FarmTimeEntry] {
+    if (not isApprovedOrAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only approved users or admins can view farm time entries");
+    };
+    farmTimeEntries.values().toList<FarmTimeEntry>().toArray().sort();
+  };
+
+  public query ({ caller }) func getFarmTimeEntriesByWorker(workerId : Nat) : async [FarmTimeEntry] {
+    if (not isApprovedOrAdmin(caller)) {
+      Runtime.trap("Unauthorized: Only approved users or admins can view farm time entries");
+    };
+    let result = List.empty<FarmTimeEntry>();
+    for (entry in farmTimeEntries.values()) {
+      if (entry.workerId == workerId) {
+        result.add(entry);
+      };
+    };
+    result.toArray().sort();
   };
 };

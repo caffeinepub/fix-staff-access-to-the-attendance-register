@@ -13,14 +13,6 @@ export interface PlotEntry {
     plotName: string;
 }
 export type Time = bigint;
-export interface WeeklyReport {
-    departmentLead: string;
-    departmentName: string;
-    planForNextWeek: string;
-    achievements: string;
-    weekEnding: Time;
-    challenges: string;
-}
 export interface ExpenseRecord {
     id: bigint;
     date: Time;
@@ -28,6 +20,14 @@ export interface ExpenseRecord {
     category: ExpenseType;
     amount: number;
     enteredBy: string;
+}
+export interface WeeklyReport {
+    departmentLead: string;
+    departmentName: string;
+    planForNextWeek: string;
+    achievements: string;
+    weekEnding: Time;
+    challenges: string;
 }
 export interface Sale {
     id: bigint;
@@ -80,10 +80,32 @@ export interface FileAttachment {
     mimeType: string;
     filename: string;
 }
+export interface FarmTimeEntry {
+    id: bigint;
+    status: string;
+    workerId: bigint;
+    arrivalTime?: string;
+    departureTime?: string;
+    date: string;
+    hoursOnFarm?: number;
+    timestamp: bigint;
+    workerName: string;
+    enteredBy: Principal;
+}
 export interface Department {
     leadName: string;
     name: string;
     description: string;
+}
+export interface HarvestEntry {
+    id: bigint;
+    date: string;
+    notes: string;
+    timestamp: bigint;
+    plotLocation: string;
+    enteredBy: Principal;
+    harvestedBy: string;
+    quantityKg: number;
 }
 export interface FileAttachmentMetadata {
     id: bigint;
@@ -134,14 +156,11 @@ export enum ItemType {
     fertilizer = "fertilizer",
     pesticide = "pesticide"
 }
-export enum UserRole {
-    admin = "admin",
-    user = "user",
-    guest = "guest"
-}
 export interface backendInterface {
     addCustomer(name: string, contactDetails: string, customerType: string): Promise<bigint>;
     addExpense(amount: number, date: Time, category: ExpenseType, description: string): Promise<bigint>;
+    addFarmTimeEntry(workerId: bigint, workerName: string, date: string, arrivalTime: string | null, departureTime: string | null, status: string): Promise<FarmTimeEntry>;
+    addHarvestEntry(date: string, quantityKg: number, harvestedBy: string, plotLocation: string, notes: string): Promise<HarvestEntry>;
     addIncome(amount: number, date: Time, source: IncomeSource, description: string): Promise<bigint>;
     addInventoryItem(name: string, itemType: ItemType, quantity: bigint, costPerUnit: number): Promise<bigint>;
     addMonthlyGoal(year: bigint, month: bigint, targetPlots: bigint): Promise<bigint>;
@@ -149,53 +168,29 @@ export interface backendInterface {
     addSale(customerId: bigint, inventoryItemId: bigint, quantity: bigint, unitPrice: number): Promise<bigint>;
     addWorker(name: string, role: string): Promise<bigint>;
     approveUser(user: Principal): Promise<void>;
-    assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     bootstrapAdminRegistration(): Promise<void>;
-    /**
-     * / Delete a specific attachment by its ID.
-     * / Only admins (including auto-registered admins) may delete attachments.
-     */
     deleteAttachment(id: bigint): Promise<void>;
-    deleteExpense(id: bigint): Promise<void>;
-    /**
-     * / Delete a specific file attachment by its ID.
-     * / Only admins (including auto-registered admins) may delete attachments.
-     */
-    deleteFileAttachment(id: bigint): Promise<void>;
-    deleteIncome(id: bigint): Promise<void>;
-    updateIncome(id: bigint, amount: number, date: Time, source: IncomeSource, description: string): Promise<void>;
     deleteCustomer(id: bigint): Promise<void>;
-    updateCustomer(id: bigint, name: string, contactDetails: string, customerType: string): Promise<void>;
-    deleteWorker(id: bigint): Promise<void>;
-    updateWorker(id: bigint, name: string, role: string): Promise<void>;
-    deleteSale(id: bigint): Promise<void>;
+    deleteExpense(id: bigint): Promise<void>;
+    deleteFarmTimeEntry(id: bigint): Promise<boolean>;
+    deleteFileAttachment(id: bigint): Promise<void>;
+    deleteHarvestEntry(id: bigint): Promise<boolean>;
+    deleteIncome(id: bigint): Promise<void>;
     deleteInventoryItem(id: bigint): Promise<void>;
-    /**
-     * / Retrieve the full content of a specific attachment by its ID.
-     * / Approved users and admins may retrieve attachment content.
-     */
+    deleteSale(id: bigint): Promise<void>;
+    deleteWorker(id: bigint): Promise<void>;
     getAttachment(id: bigint): Promise<FileAttachment | null>;
-    /**
-     * / Retrieve metadata for all attachments belonging to a specific inventory item.
-     * / Approved users and admins may retrieve attachment metadata.
-     */
     getAttachmentsForItem(inventoryItemId: bigint): Promise<Array<FileAttachmentMetadata>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
-    getCallerUserRole(): Promise<UserRole>;
     getCustomerPurchaseHistory(customerId: bigint): Promise<Array<Sale>>;
     getCustomers(): Promise<Array<Customer>>;
     getDepartments(): Promise<Array<Department>>;
     getExpenseRecords(): Promise<Array<ExpenseRecord>>;
-    /**
-     * / Retrieve the full content of a specific file attachment by its ID.
-     * / Approved users and admins may retrieve attachment content.
-     */
+    getFarmTimeEntries(): Promise<Array<FarmTimeEntry>>;
+    getFarmTimeEntriesByWorker(workerId: bigint): Promise<Array<FarmTimeEntry>>;
     getFileAttachment(id: bigint): Promise<FileAttachment | null>;
-    /**
-     * / Retrieve metadata for all file attachments.
-     * / Approved users and admins may retrieve attachment metadata.
-     */
     getFileAttachmentMetadata(): Promise<Array<FileAttachmentMetadata>>;
+    getHarvestEntries(): Promise<Array<HarvestEntry>>;
     getIncomeRecords(): Promise<Array<IncomeRecord>>;
     getInventoryItems(): Promise<Array<InventoryItem>>;
     getMonthlyGoal(id: bigint): Promise<MonthlyGoal | null>;
@@ -210,7 +205,6 @@ export interface backendInterface {
     getWorkers(): Promise<Array<Worker>>;
     initializeFixedMonthlyGoals(): Promise<void>;
     isAutoRegisteredAdmin(principal: Principal): Promise<boolean>;
-    isCallerAdmin(): Promise<boolean>;
     isCallerApproved(): Promise<boolean>;
     listApprovals(): Promise<Array<UserApprovalInfo>>;
     listPendingUsers(): Promise<Array<UserProfile>>;
@@ -220,12 +214,13 @@ export interface backendInterface {
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setApproval(user: Principal, status: ApprovalStatus): Promise<void>;
     submitWeeklyReport(departmentLead: string, departmentName: string, weekEnding: Time, achievements: string, challenges: string, planForNextWeek: string): Promise<void>;
+    updateCustomer(id: bigint, name: string, contactDetails: string, customerType: string): Promise<void>;
     updateExpense(id: bigint, amount: number, date: Time, category: ExpenseType, description: string): Promise<void>;
+    updateFarmTimeEntry(id: bigint, arrivalTime: string | null, departureTime: string | null, status: string): Promise<FarmTimeEntry | null>;
+    updateHarvestEntry(id: bigint, date: string, quantityKg: number, harvestedBy: string, plotLocation: string, notes: string): Promise<HarvestEntry | null>;
+    updateIncome(id: bigint, amount: number, date: Time, source: IncomeSource, description: string): Promise<void>;
     updateInventoryItem(id: bigint, name: string, itemType: ItemType, quantity: bigint, costPerUnit: number): Promise<void>;
-    /**
-     * / Upload a file attachment to a specific inventory item.
-     * / Only admins (including auto-registered admins) may upload attachments.
-     */
+    updateWorker(id: bigint, name: string, role: string): Promise<void>;
     uploadAttachmentToItem(inventoryItemId: bigint, filename: string, mimeType: string, content: Uint8Array): Promise<bigint>;
     uploadFileAttachment(filename: string, mimeType: string, content: Uint8Array): Promise<bigint>;
 }

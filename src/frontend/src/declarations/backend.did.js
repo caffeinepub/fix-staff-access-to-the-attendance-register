@@ -17,6 +17,28 @@ export const ExpenseType = IDL.Variant({
   'labor' : IDL.Null,
   'packaging' : IDL.Null,
 });
+export const FarmTimeEntry = IDL.Record({
+  'id' : IDL.Nat,
+  'status' : IDL.Text,
+  'workerId' : IDL.Nat,
+  'arrivalTime' : IDL.Opt(IDL.Text),
+  'departureTime' : IDL.Opt(IDL.Text),
+  'date' : IDL.Text,
+  'hoursOnFarm' : IDL.Opt(IDL.Float64),
+  'timestamp' : IDL.Int,
+  'workerName' : IDL.Text,
+  'enteredBy' : IDL.Principal,
+});
+export const HarvestEntry = IDL.Record({
+  'id' : IDL.Nat,
+  'date' : IDL.Text,
+  'notes' : IDL.Text,
+  'timestamp' : IDL.Int,
+  'plotLocation' : IDL.Text,
+  'enteredBy' : IDL.Principal,
+  'harvestedBy' : IDL.Text,
+  'quantityKg' : IDL.Float64,
+});
 export const IncomeSource = IDL.Variant({
   'other' : IDL.Null,
   'local' : IDL.Null,
@@ -28,11 +50,6 @@ export const ItemType = IDL.Variant({
   'peppers' : IDL.Null,
   'fertilizer' : IDL.Null,
   'pesticide' : IDL.Null,
-});
-export const UserRole = IDL.Variant({
-  'admin' : IDL.Null,
-  'user' : IDL.Null,
-  'guest' : IDL.Null,
 });
 export const FileAttachment = IDL.Record({
   'id' : IDL.Nat,
@@ -140,11 +157,27 @@ export const UserApprovalInfo = IDL.Record({
 });
 
 export const idlService = IDL.Service({
-  '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'addCustomer' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Nat], []),
   'addExpense' : IDL.Func(
       [IDL.Float64, Time, ExpenseType, IDL.Text],
       [IDL.Nat],
+      [],
+    ),
+  'addFarmTimeEntry' : IDL.Func(
+      [
+        IDL.Nat,
+        IDL.Text,
+        IDL.Text,
+        IDL.Opt(IDL.Text),
+        IDL.Opt(IDL.Text),
+        IDL.Text,
+      ],
+      [FarmTimeEntry],
+      [],
+    ),
+  'addHarvestEntry' : IDL.Func(
+      [IDL.Text, IDL.Float64, IDL.Text, IDL.Text, IDL.Text],
+      [HarvestEntry],
       [],
     ),
   'addIncome' : IDL.Func(
@@ -162,11 +195,17 @@ export const idlService = IDL.Service({
   'addSale' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Nat, IDL.Float64], [IDL.Nat], []),
   'addWorker' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
   'approveUser' : IDL.Func([IDL.Principal], [], []),
-  'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'bootstrapAdminRegistration' : IDL.Func([], [], []),
   'deleteAttachment' : IDL.Func([IDL.Nat], [], []),
+  'deleteCustomer' : IDL.Func([IDL.Nat], [], []),
   'deleteExpense' : IDL.Func([IDL.Nat], [], []),
+  'deleteFarmTimeEntry' : IDL.Func([IDL.Nat], [IDL.Bool], []),
   'deleteFileAttachment' : IDL.Func([IDL.Nat], [], []),
+  'deleteHarvestEntry' : IDL.Func([IDL.Nat], [IDL.Bool], []),
+  'deleteIncome' : IDL.Func([IDL.Nat], [], []),
+  'deleteInventoryItem' : IDL.Func([IDL.Nat], [], []),
+  'deleteSale' : IDL.Func([IDL.Nat], [], []),
+  'deleteWorker' : IDL.Func([IDL.Nat], [], []),
   'getAttachment' : IDL.Func([IDL.Nat], [IDL.Opt(FileAttachment)], ['query']),
   'getAttachmentsForItem' : IDL.Func(
       [IDL.Nat],
@@ -174,7 +213,6 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
-  'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getCustomerPurchaseHistory' : IDL.Func(
       [IDL.Nat],
       [IDL.Vec(Sale)],
@@ -183,6 +221,12 @@ export const idlService = IDL.Service({
   'getCustomers' : IDL.Func([], [IDL.Vec(Customer)], ['query']),
   'getDepartments' : IDL.Func([], [IDL.Vec(Department)], ['query']),
   'getExpenseRecords' : IDL.Func([], [IDL.Vec(ExpenseRecord)], ['query']),
+  'getFarmTimeEntries' : IDL.Func([], [IDL.Vec(FarmTimeEntry)], ['query']),
+  'getFarmTimeEntriesByWorker' : IDL.Func(
+      [IDL.Nat],
+      [IDL.Vec(FarmTimeEntry)],
+      ['query'],
+    ),
   'getFileAttachment' : IDL.Func(
       [IDL.Nat],
       [IDL.Opt(FileAttachment)],
@@ -193,6 +237,7 @@ export const idlService = IDL.Service({
       [IDL.Vec(FileAttachmentMetadata)],
       ['query'],
     ),
+  'getHarvestEntries' : IDL.Func([], [IDL.Vec(HarvestEntry)], ['query']),
   'getIncomeRecords' : IDL.Func([], [IDL.Vec(IncomeRecord)], ['query']),
   'getInventoryItems' : IDL.Func([], [IDL.Vec(InventoryItem)], ['query']),
   'getMonthlyGoal' : IDL.Func([IDL.Nat], [IDL.Opt(MonthlyGoal)], ['query']),
@@ -227,7 +272,6 @@ export const idlService = IDL.Service({
   'getWorkers' : IDL.Func([], [IDL.Vec(Worker)], ['query']),
   'initializeFixedMonthlyGoals' : IDL.Func([], [], []),
   'isAutoRegisteredAdmin' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
-  'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isCallerApproved' : IDL.Func([], [IDL.Bool], ['query']),
   'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
   'listPendingUsers' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
@@ -245,8 +289,24 @@ export const idlService = IDL.Service({
       [],
       [],
     ),
+  'updateCustomer' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text, IDL.Text], [], []),
   'updateExpense' : IDL.Func(
       [IDL.Nat, IDL.Float64, Time, ExpenseType, IDL.Text],
+      [],
+      [],
+    ),
+  'updateFarmTimeEntry' : IDL.Func(
+      [IDL.Nat, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text), IDL.Text],
+      [IDL.Opt(FarmTimeEntry)],
+      [],
+    ),
+  'updateHarvestEntry' : IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Float64, IDL.Text, IDL.Text, IDL.Text],
+      [IDL.Opt(HarvestEntry)],
+      [],
+    ),
+  'updateIncome' : IDL.Func(
+      [IDL.Nat, IDL.Float64, Time, IncomeSource, IDL.Text],
       [],
       [],
     ),
@@ -255,6 +315,7 @@ export const idlService = IDL.Service({
       [],
       [],
     ),
+  'updateWorker' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text], [], []),
   'uploadAttachmentToItem' : IDL.Func(
       [IDL.Nat, IDL.Text, IDL.Text, IDL.Vec(IDL.Nat8)],
       [IDL.Nat],
@@ -279,6 +340,28 @@ export const idlFactory = ({ IDL }) => {
     'labor' : IDL.Null,
     'packaging' : IDL.Null,
   });
+  const FarmTimeEntry = IDL.Record({
+    'id' : IDL.Nat,
+    'status' : IDL.Text,
+    'workerId' : IDL.Nat,
+    'arrivalTime' : IDL.Opt(IDL.Text),
+    'departureTime' : IDL.Opt(IDL.Text),
+    'date' : IDL.Text,
+    'hoursOnFarm' : IDL.Opt(IDL.Float64),
+    'timestamp' : IDL.Int,
+    'workerName' : IDL.Text,
+    'enteredBy' : IDL.Principal,
+  });
+  const HarvestEntry = IDL.Record({
+    'id' : IDL.Nat,
+    'date' : IDL.Text,
+    'notes' : IDL.Text,
+    'timestamp' : IDL.Int,
+    'plotLocation' : IDL.Text,
+    'enteredBy' : IDL.Principal,
+    'harvestedBy' : IDL.Text,
+    'quantityKg' : IDL.Float64,
+  });
   const IncomeSource = IDL.Variant({
     'other' : IDL.Null,
     'local' : IDL.Null,
@@ -290,11 +373,6 @@ export const idlFactory = ({ IDL }) => {
     'peppers' : IDL.Null,
     'fertilizer' : IDL.Null,
     'pesticide' : IDL.Null,
-  });
-  const UserRole = IDL.Variant({
-    'admin' : IDL.Null,
-    'user' : IDL.Null,
-    'guest' : IDL.Null,
   });
   const FileAttachment = IDL.Record({
     'id' : IDL.Nat,
@@ -402,11 +480,27 @@ export const idlFactory = ({ IDL }) => {
   });
   
   return IDL.Service({
-    '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'addCustomer' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Nat], []),
     'addExpense' : IDL.Func(
         [IDL.Float64, Time, ExpenseType, IDL.Text],
         [IDL.Nat],
+        [],
+      ),
+    'addFarmTimeEntry' : IDL.Func(
+        [
+          IDL.Nat,
+          IDL.Text,
+          IDL.Text,
+          IDL.Opt(IDL.Text),
+          IDL.Opt(IDL.Text),
+          IDL.Text,
+        ],
+        [FarmTimeEntry],
+        [],
+      ),
+    'addHarvestEntry' : IDL.Func(
+        [IDL.Text, IDL.Float64, IDL.Text, IDL.Text, IDL.Text],
+        [HarvestEntry],
         [],
       ),
     'addIncome' : IDL.Func(
@@ -428,11 +522,17 @@ export const idlFactory = ({ IDL }) => {
       ),
     'addWorker' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
     'approveUser' : IDL.Func([IDL.Principal], [], []),
-    'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'bootstrapAdminRegistration' : IDL.Func([], [], []),
     'deleteAttachment' : IDL.Func([IDL.Nat], [], []),
+    'deleteCustomer' : IDL.Func([IDL.Nat], [], []),
     'deleteExpense' : IDL.Func([IDL.Nat], [], []),
+    'deleteFarmTimeEntry' : IDL.Func([IDL.Nat], [IDL.Bool], []),
     'deleteFileAttachment' : IDL.Func([IDL.Nat], [], []),
+    'deleteHarvestEntry' : IDL.Func([IDL.Nat], [IDL.Bool], []),
+    'deleteIncome' : IDL.Func([IDL.Nat], [], []),
+    'deleteInventoryItem' : IDL.Func([IDL.Nat], [], []),
+    'deleteSale' : IDL.Func([IDL.Nat], [], []),
+    'deleteWorker' : IDL.Func([IDL.Nat], [], []),
     'getAttachment' : IDL.Func([IDL.Nat], [IDL.Opt(FileAttachment)], ['query']),
     'getAttachmentsForItem' : IDL.Func(
         [IDL.Nat],
@@ -440,7 +540,6 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
-    'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getCustomerPurchaseHistory' : IDL.Func(
         [IDL.Nat],
         [IDL.Vec(Sale)],
@@ -449,6 +548,12 @@ export const idlFactory = ({ IDL }) => {
     'getCustomers' : IDL.Func([], [IDL.Vec(Customer)], ['query']),
     'getDepartments' : IDL.Func([], [IDL.Vec(Department)], ['query']),
     'getExpenseRecords' : IDL.Func([], [IDL.Vec(ExpenseRecord)], ['query']),
+    'getFarmTimeEntries' : IDL.Func([], [IDL.Vec(FarmTimeEntry)], ['query']),
+    'getFarmTimeEntriesByWorker' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Vec(FarmTimeEntry)],
+        ['query'],
+      ),
     'getFileAttachment' : IDL.Func(
         [IDL.Nat],
         [IDL.Opt(FileAttachment)],
@@ -459,6 +564,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(FileAttachmentMetadata)],
         ['query'],
       ),
+    'getHarvestEntries' : IDL.Func([], [IDL.Vec(HarvestEntry)], ['query']),
     'getIncomeRecords' : IDL.Func([], [IDL.Vec(IncomeRecord)], ['query']),
     'getInventoryItems' : IDL.Func([], [IDL.Vec(InventoryItem)], ['query']),
     'getMonthlyGoal' : IDL.Func([IDL.Nat], [IDL.Opt(MonthlyGoal)], ['query']),
@@ -493,7 +599,6 @@ export const idlFactory = ({ IDL }) => {
     'getWorkers' : IDL.Func([], [IDL.Vec(Worker)], ['query']),
     'initializeFixedMonthlyGoals' : IDL.Func([], [], []),
     'isAutoRegisteredAdmin' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
-    'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isCallerApproved' : IDL.Func([], [IDL.Bool], ['query']),
     'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
     'listPendingUsers' : IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
@@ -511,8 +616,28 @@ export const idlFactory = ({ IDL }) => {
         [],
         [],
       ),
+    'updateCustomer' : IDL.Func(
+        [IDL.Nat, IDL.Text, IDL.Text, IDL.Text],
+        [],
+        [],
+      ),
     'updateExpense' : IDL.Func(
         [IDL.Nat, IDL.Float64, Time, ExpenseType, IDL.Text],
+        [],
+        [],
+      ),
+    'updateFarmTimeEntry' : IDL.Func(
+        [IDL.Nat, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text), IDL.Text],
+        [IDL.Opt(FarmTimeEntry)],
+        [],
+      ),
+    'updateHarvestEntry' : IDL.Func(
+        [IDL.Nat, IDL.Text, IDL.Float64, IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Opt(HarvestEntry)],
+        [],
+      ),
+    'updateIncome' : IDL.Func(
+        [IDL.Nat, IDL.Float64, Time, IncomeSource, IDL.Text],
         [],
         [],
       ),
@@ -521,6 +646,7 @@ export const idlFactory = ({ IDL }) => {
         [],
         [],
       ),
+    'updateWorker' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text], [], []),
     'uploadAttachmentToItem' : IDL.Func(
         [IDL.Nat, IDL.Text, IDL.Text, IDL.Vec(IDL.Nat8)],
         [IDL.Nat],
