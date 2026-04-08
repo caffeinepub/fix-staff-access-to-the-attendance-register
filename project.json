@@ -1,29 +1,27 @@
 {
-  "overview": "A comprehensive pepper farm management app for tracking income, expenses, inventory, customers, sales, worker attendance, farm time, departmental reporting, and harvest logging. Built for a small Nigerian pepper farm with admin controls, user verification, and structured weekly departmental reports.",
+  "overview": "A comprehensive pepper farm management app with bookkeeping, inventory, sales, worker attendance, harvest tracking, departmental reporting, and now printable month-end and year-end summary reports.",
   "features": [
-    "Income & expense bookkeeping in Nigerian Naira (₦)",
+    "Month-end summary reports with income, expenses, harvest, and department activity",
+    "Year-end summary reports with annual financial breakdown and plot expansion progress",
+    "Print-ready report layouts optimized for stakeholder sharing",
+    "Selectable month and year for historical report generation",
+    "Departmental weekly reporting with achievements, challenges, and plans",
+    "Income and expense tracking in Nigerian Naira",
+    "Harvest log with quantity tracking",
+    "Worker attendance and farm time logging",
     "Inventory management with file attachments",
-    "Customer and sales tracking",
-    "Worker attendance register with summary cards",
-    "Farm time logging with backend persistence",
-    "Departmental weekly reporting (4 leads: Goodnews, Nicholas, Elvis, Wisdom)",
-    "Harvest log with backend persistence",
-    "Admin roles with deletion key security (2642)",
-    "User verification and approval workflow",
-    "Monthly plot expansion tracker (2 plots/month goal)",
-    "Department performance metrics and compliance badges",
-    "Income vs expenses trend charts and CSV export",
-    "Saturday report reminder banner"
+    "Admin controls with secure deletion key"
   ],
-  "category": "business-productivity",
+  "category": "farm-management",
   "tags": [
-    "farm-management",
+    "farm",
     "bookkeeping",
-    "nigeria",
+    "reports",
     "pepper-farm",
+    "inventory",
     "attendance",
-    "reporting",
-    "inventory"
+    "harvest",
+    "nigeria"
   ],
-  "last_updated": "2026-04-07T23:21:00.850Z"
+  "last_updated": "2026-04-08T00:01:30.000Z"
 }

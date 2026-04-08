@@ -8,6 +8,7 @@ import FarmTimeTab from "../components/tabs/FarmTimeTab";
 import HarvestLogTab from "../components/tabs/HarvestLogTab";
 import IncomeTab from "../components/tabs/IncomeTab";
 import InventoryTab from "../components/tabs/InventoryTab";
+import ReportsTab from "../components/tabs/ReportsTab";
 import SalesTab from "../components/tabs/SalesTab";
 import SummaryTab from "../components/tabs/SummaryTab";
 import VerificationTab from "../components/tabs/VerificationTab";
@@ -24,6 +25,7 @@ type TabValue =
   | "farmTime"
   | "farmOperations"
   | "harvestLog"
+  | "reports"
   | "verification";
 
 const NAV_ITEMS: { value: TabValue; label: string }[] = [
@@ -37,6 +39,7 @@ const NAV_ITEMS: { value: TabValue; label: string }[] = [
   { value: "farmTime", label: "Farm Time" },
   { value: "farmOperations", label: "Farm Operations" },
   { value: "harvestLog", label: "Harvest Log" },
+  { value: "reports", label: "Reports" },
 ];
 
 function ReportReminderBanner() {
@@ -134,6 +137,7 @@ export default function Dashboard() {
         {activeTab === "farmTime" && <FarmTimeTab />}
         {activeTab === "farmOperations" && <FarmOperationsTab />}
         {activeTab === "harvestLog" && <HarvestLogTab />}
+        {activeTab === "reports" && <ReportsTab />}
         {isAdmin && activeTab === "verification" && <VerificationTab />}
       </div>
     </div>

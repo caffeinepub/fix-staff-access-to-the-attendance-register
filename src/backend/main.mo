@@ -6,9 +6,9 @@ import Runtime "mo:core/Runtime";
 import Principal "mo:core/Principal";
 import Nat "mo:core/Nat";
 import Int "mo:core/Int";
-import Migration "migration";
 
-(with migration = Migration.run)
+
+
 actor {
   // ----- User Profiles -----
   public type UserProfile = {

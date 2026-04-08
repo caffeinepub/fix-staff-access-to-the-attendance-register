@@ -1,6 +1,5 @@
-// Version: 3.0.0
+// Version: 1.0.0
 type ApprovalStatus__1072888826 = {#approved; #pending; #rejected};
-type ApprovalStatus__641045796 = {#approved; #pending; #rejected};
 type AttendanceRecord__852829031 =
   {
     date : Time__900049286;
@@ -95,10 +94,6 @@ type List__790383201<T> =
     var blocks : [var [var ?T]];
     var elementIndex : Nat__490723111
   };
-type Map__158565046<K, V> = Map__297112838<K, V>;
-type Map__297112838<K, V> =
-  {var root : Node__46230540<K, V>; var size : Nat__490723111};
-type Map__605269027<K, V> = Map__158565046<K, V>;
 type Nat__490723111 = Nat__920180692;
 type Nat__920180692 = Nat;
 type Node__46230540<K, V> =
@@ -118,7 +113,6 @@ type Sale__221607697 =
 type Time__796480547 = Int__270357528;
 type Time__900049286 = Time__796480547;
 type UserProfile__491224006 = {name : Text};
-type UserRole__717262347 = {#admin; #guest; #user};
 type WeeklyReport__503310832 =
   {
     achievements : Text;
@@ -140,125 +134,7 @@ type WorkerDailyRecord__570633932 =
   };
 type Worker__19188654 =
   {enteredBy : Text; id : Nat; name : Text; role : Text};
-actor ({
-  in accessControlState :
-    {
-      var adminAssigned : Bool;
-      userRoles : Map__605269027<Principal, UserRole__717262347>
-    };
-  stable adminLimit : Nat;
-  stable approvalMap :
-    {
-      var root : Node__46230540<Principal, ApprovalStatus__1072888826>;
-      var size : Nat__490723111
-    };
-  in approvalState :
-    {
-      var approvalStatus :
-        Map__605269027<Principal, ApprovalStatus__641045796>
-    };
-  stable attendanceRecords :
-    {
-      var root : Node__46230540<Nat, AttendanceRecord__852829031>;
-      var size : Nat__490723111
-    };
-  stable var autoRegisteredAdminCount : Nat;
-  stable autoRegisteredAdmins :
-    {var root : Node__46230540<Principal, ()>; var size : Nat__490723111};
-  stable customers :
-    {
-      var root : Node__46230540<Nat, Customer__263943254>;
-      var size : Nat__490723111
-    };
-  stable departments :
-    {
-      var blockIndex : Nat__490723111;
-      var blocks : [var [var ?Department__1001924832]];
-      var elementIndex : Nat__490723111
-    };
-  stable expenseRecords :
-    {
-      var root : Node__46230540<Nat, ExpenseRecord__80229234>;
-      var size : Nat__490723111
-    };
-  stable farmTimeEntries :
-    {
-      var root : Node__46230540<Nat, FarmTimeEntry__517747509>;
-      var size : Nat__490723111
-    };
-  stable fileAttachments :
-    {
-      var root : Node__46230540<Nat, FileAttachment__335541979>;
-      var size : Nat__490723111
-    };
-  stable harvestEntries :
-    {
-      var root : Node__46230540<Nat, HarvestEntry__553815201>;
-      var size : Nat__490723111
-    };
-  stable incomeRecords :
-    {
-      var root : Node__46230540<Nat, IncomeRecord__839605142>;
-      var size : Nat__490723111
-    };
-  stable inventory :
-    {
-      var root : Node__46230540<Nat, InventoryItem__576608082>;
-      var size : Nat__490723111
-    };
-  stable monthlyGoals :
-    {
-      var root :
-        Node__46230540<Nat,
-                        {
-                          actualPlots : Nat;
-                          id : Nat;
-                          month : Nat;
-                          plotEntries : List__415060402<PlotEntry__439061936>;
-                          targetPlots : Nat;
-                          year : Nat
-                        }>;
-      var size : Nat__490723111
-    };
-  stable var nextAttendanceId : Nat;
-  stable var nextCustomerId : Nat;
-  stable var nextExpenseId : Nat;
-  stable var nextFarmTimeEntryId : Nat;
-  stable var nextFileAttachmentId : Nat;
-  stable var nextHarvestEntryId : Nat;
-  stable var nextIncomeId : Nat;
-  stable var nextInventoryItemId : Nat;
-  stable var nextMonthlyGoalId : Nat;
-  stable var nextSaleId : Nat;
-  stable var nextWorkerId : Nat;
-  stable sales :
-    {
-      var root : Node__46230540<Nat, Sale__221607697>;
-      var size : Nat__490723111
-    };
-  stable var ultimateAdmin : ?Principal;
-  stable userProfiles :
-    {
-      var root : Node__46230540<Principal, UserProfile__491224006>;
-      var size : Nat__490723111
-    };
-  stable weeklyReports :
-    {
-      var blockIndex : Nat__490723111;
-      var blocks : [var [var ?WeeklyReport__503310832]];
-      var elementIndex : Nat__490723111
-    };
-  stable workerDailyRecords :
-    {
-      var root : Node__46230540<Nat, WorkerDailyRecord__570633932>;
-      var size : Nat__490723111
-    };
-  stable workers :
-    {
-      var root : Node__46230540<Nat, Worker__19188654>;
-      var size : Nat__490723111
-    }
-}, {
+actor {
   stable adminLimit : Nat;
   stable approvalMap :
     {
@@ -366,4 +242,4 @@ actor ({
       var root : Node__46230540<Nat, Worker__19188654>;
       var size : Nat__490723111
     }
-}) ;
+};
